@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Career Compass — radar tower</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070a10;--pan:#0b1019;--ink:#eaf2f8;--dim:#8a97a8;--faint:#59647a;--line:#1b2434;--games:#3b6fe0;--film:#ff9b3d;--violet:#8a63ff;--sel:#36d98a;--ink2:#c7d2dd;}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;background:radial-gradient(120% 90% at 60% 30%,#0c1422,#05070d 70%);color:var(--ink);
+  font-family:"JetBrains Mono",ui-monospace,monospace;overflow:hidden;}
+.app{display:grid;grid-template-columns:252px 1fr;height:100vh;height:100dvh;}
+
+/* menu */
+.menu{border-right:1px solid var(--line);background:rgba(8,12,20,.6);overflow-y:auto;padding:16px 0 30px;backdrop-filter:blur(4px);}
+.menu .ttl{padding:4px 18px 14px;font-family:"Orbitron";font-size:13px;font-weight:700;letter-spacing:.1em;}
+.menu .grp{padding:14px 18px 6px;font-family:"Orbitron";font-size:10px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:8px;}
+.menu .grp .gdot{width:7px;height:7px;border-radius:50%;}
+.menu .grp.g .gdot{background:var(--games);box-shadow:0 0 8px var(--games);}
+.menu .grp.v .gdot{background:var(--film);box-shadow:0 0 8px var(--film);}
+.menu .grp .cnt{margin-left:auto;color:var(--faint);font-family:"JetBrains Mono";letter-spacing:0;font-weight:400;}
+.r{display:flex;align-items:center;gap:10px;padding:7px 18px;cursor:pointer;border-left:2px solid transparent;font-size:12px;color:var(--dim);transition:.14s;}
+.r:hover{background:rgba(255,255,255,.03);color:var(--ink);}
+.r .rd{width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none;transition:.14s;}
+.r.on{border-left-color:var(--sel);color:var(--ink);}
+.r.g.on .rd{background:var(--games);box-shadow:0 0 7px var(--games);}
+.r.v.on .rd{background:var(--film);box-shadow:0 0 7px var(--film);}
+
+/* stage */
+.stage{position:relative;overflow:hidden;touch-action:none;cursor:grab;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+.stage.drag{cursor:grabbing;}
+.scene{position:absolute;inset:0;perspective:2400px;perspective-origin:50% 42%;z-index:2;}
+.torus{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;}
+.world{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;will-change:transform;}
+
+.unit{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;
+  transition:transform .65s cubic-bezier(.22,1,.36,1),filter .5s ease;}
+.disk{position:absolute;left:0;top:0;width:480px;height:480px;margin:-240px 0 0 -240px;
+  transform-style:preserve-3d;backface-visibility:visible;
+  transition:transform .6s cubic-bezier(.22,1,.36,1),opacity .5s ease;}
+.disk svg{display:block;width:480px;height:480px;overflow:visible;}
+.lyr{position:absolute;inset:0;backface-visibility:visible;}
+.lyr.cap svg{pointer-events:none;}
+.disk:not(.flat) .lyr,.disk:not(.flat) .wall{opacity:.4;filter:brightness(.8);}
+.unit.preview .disk .lyr,.unit.preview .disk .wall{opacity:1;filter:none;}
+.walls{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none;}
+.wall{position:absolute;left:50%;top:50%;backface-visibility:hidden;}
+.disk.flat .walls,.disk.flat .lyr.cap{display:none;}
+.disk.snap{transition:none !important;}
+.ring{fill:none;stroke:rgba(255,255,255,.10);stroke-width:.6;}
+.spoke{stroke:rgba(255,255,255,.08);stroke-width:.6;}
+.poly{stroke-width:1.2;}
+.lab{font-family:"JetBrains Mono";font-size:9.7px;font-weight:500;fill:var(--ink2);opacity:0;transition:opacity .4s;text-anchor:middle;}
+.cap{font-family:"Orbitron";font-size:11px;font-weight:700;letter-spacing:.06em;opacity:0;transition:opacity .4s;text-anchor:middle;}
+.stag{font-family:"Orbitron";font-size:10.5px;font-weight:700;letter-spacing:.2em;opacity:0;transition:opacity .4s;text-anchor:middle;text-transform:uppercase;}
+.unit.focus .lab,.unit.focus .cap,.unit.focus .stag{opacity:1;}
+.unit.focus .poly{filter:drop-shadow(0 0 5px var(--glow));}
+.unit.preview .poly{filter:drop-shadow(0 0 12px var(--sel)) drop-shadow(0 0 4px var(--sel));stroke:var(--sel);stroke-width:2.4;stroke-opacity:.95;}
+.stage:not(.drag) .unit:hover .poly{filter:drop-shadow(0 0 9px var(--sel));stroke:var(--sel);stroke-width:1.8;}
+.pt{cursor:pointer;}
+.disk.dim{opacity:.16;filter:blur(3px);}
+.callout{position:absolute;z-index:8;pointer-events:none;transform:translateX(-50%);
+  font:600 12px/1.2 "JetBrains Mono";letter-spacing:.04em;color:var(--ink);white-space:nowrap;
+  text-shadow:0 1px 6px #000;opacity:0;transition:opacity .18s;}
+.callout .ctxt{display:block;padding-bottom:3px;border-bottom:1px solid var(--sel);}
+.callout .lead{position:absolute;left:50%;top:100%;height:0;border-top:1px solid var(--sel);
+  transform-origin:left center;opacity:.7;}
+.callout.show{opacity:1;}
+
+/* vertex-focus card */
+.fcard{position:absolute;top:50%;right:40px;transform:translateY(-50%);z-index:8;pointer-events:none;width:300px;padding:12px 0;
+  background:none;opacity:0;transition:opacity .3s;--acc:var(--sel);}
+.fcard.show{opacity:1;pointer-events:auto;}
+.fcard.left{left:40px;right:auto;}
+.fcard .ft{font:700 10px/1 "Orbitron";letter-spacing:.18em;text-transform:uppercase;color:var(--acc);margin-bottom:11px;text-shadow:0 1px 6px #000;}
+.fcard .fbar{display:flex;gap:5px;margin-bottom:8px;}
+.fcard .fbar i{flex:1;height:5px;border-radius:2px;background:rgba(255,255,255,.10);transition:background .3s;}
+.fcard .fbar i.on{background:var(--acc);box-shadow:0 0 6px var(--acc);}
+.fcard .fmeta{font:500 11px/1.5 "JetBrains Mono";color:var(--ink2);margin-bottom:12px;text-shadow:0 1px 6px #000;}
+.fcard .fdesc{font:400 12.5px/1.65 "JetBrains Mono";color:var(--ink2);text-shadow:0 1px 6px #000,0 0 3px #000;}
+
+/* selected-vertex highlight (lives in the svg, tracks orbit) */
+.hlg{opacity:0;transition:opacity .3s;}
+.hlg.on{opacity:1;}
+.hlwedge{fill:var(--acc);fill-opacity:.22;stroke:none;filter:blur(6px);}
+.hlspoke{stroke:var(--acc);stroke-width:2;stroke-opacity:.75;}
+.hldot{fill:var(--acc);filter:drop-shadow(0 0 5px var(--acc));}
+.hovring{fill:var(--acc);filter:drop-shadow(0 0 11px var(--acc)) drop-shadow(0 0 3px #fff);pointer-events:none;opacity:0;animation:hovup .16s ease forwards;}
+@keyframes hovup{from{opacity:0;}to{opacity:.95;}}
+.lab.hi{fill:#fff;}
+.disk.nolab .lab,.disk.nolab .stag,.disk.nolab .cap{opacity:0 !important;}
+
+.backbtn{position:absolute;left:18px;top:18px;z-index:9;background:rgba(10,16,26,.7);color:var(--ink);
+  border:1px solid var(--line);border-radius:8px;padding:9px 14px;font:600 11px/1 "JetBrains Mono";
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.15s;opacity:0;pointer-events:none;}
+.backbtn.show{opacity:1;pointer-events:auto;}
+.backbtn:hover{border-color:var(--sel);}
+
+.disk.gone{pointer-events:none;animation:disint .8s ease forwards;}
+@keyframes disint{0%{opacity:1;}22%{opacity:.95;filter:brightness(2) blur(0);}100%{opacity:0;filter:brightness(.5) blur(20px);}}
+
+/* overlay chrome */
+.now{position:absolute;left:0;right:0;top:22px;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;z-index:5;}
+.now.show{opacity:1;}
+.now .rn{font-family:"Orbitron";font-weight:700;font-size:clamp(18px,3vw,26px);letter-spacing:.04em;}
+.now .rm{font-size:11px;color:var(--dim);letter-spacing:.18em;text-transform:uppercase;margin-top:6px;}
+.hint{position:absolute;left:0;right:0;bottom:18px;text-align:center;font-size:10px;color:var(--faint);
+  letter-spacing:.14em;text-transform:uppercase;z-index:5;pointer-events:none;}
+.ctrls{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);display:flex;gap:10px;z-index:6;
+  opacity:0;pointer-events:none;transition:opacity .4s;}
+.ctrls.show{opacity:1;pointer-events:auto;}
+.ctrls button{background:rgba(10,16,26,.7);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+  padding:9px 14px;font:600 11px/1 "JetBrains Mono";letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.15s;}
+.ctrls button:hover{border-color:var(--sel);}
+
+/* category legend */
+.legend{position:absolute;left:18px;bottom:18px;z-index:6;background:rgba(8,12,20,.55);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;backdrop-filter:blur(4px);max-width:210px;pointer-events:none;}
+.legend .lt{font-family:"Orbitron";font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.legend .lrow{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim);padding:2px 0;}
+.legend .ls{width:11px;height:11px;border-radius:2px;flex:none;}
+.legend .lnote{margin-top:8px;font-size:9px;color:var(--faint);letter-spacing:.04em;line-height:1.4;}
+
+.menu::-webkit-scrollbar{width:8px;}.menu::-webkit-scrollbar-thumb{background:#1d2736;border-radius:4px;}
+
+/* sound toggle */
+.mutebtn{position:absolute;right:18px;top:18px;z-index:9;background:rgba(10,16,26,.7);color:var(--dim);
+  border:1px solid var(--line);border-radius:8px;padding:9px 12px;font:600 10px/1 "JetBrains Mono";
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.15s;}
+.mutebtn:hover{border-color:var(--sel);color:var(--ink);}
+.mutebtn.off{color:var(--faint);}
+
+/* one-shot load splash (pure-CSS fade so it can never get stuck) */
+.loading{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 90% at 60% 30%,#0c1422,#05070d 70%);
+  font:600 11px/1 "JetBrains Mono";letter-spacing:.22em;text-transform:uppercase;color:var(--dim);
+  animation:ldfade .5s ease .5s forwards;}
+@keyframes ldfade{to{opacity:0;visibility:hidden;}}
+
+/* responsive: shrink the fixed sidebar so the stage is usable on small screens
+   (full hamburger collapse is a larger change, deferred) */
+@media (max-width:760px){
+  .app{grid-template-columns:188px 1fr;}
+  .menu .ttl{font-size:12px;padding:4px 14px 12px;}
+  .r{padding:7px 14px;font-size:11.5px;}
+  .legend{max-width:170px;padding:8px 10px;}
+}
+@media (max-width:520px){
+  .app{grid-template-columns:148px 1fr;}
+  .scene{perspective:1600px;}
+  .legend{display:none;}
+  .now .rn{font-size:18px;}
+  .mutebtn{padding:7px 9px;}
+}
+/* ===== role comparison ===== */
+.cmpbar{display:flex;gap:8px;align-items:center;padding:2px 16px 12px;}
+.cmptoggle{flex:1;background:rgba(10,16,26,.6);color:var(--dim);border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;font:700 10px/1 "Orbitron";letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:.15s;}
+.cmptoggle:hover{color:var(--ink);border-color:var(--sel);}
+.cmptoggle.on{color:var(--sel);border-color:var(--sel);background:rgba(54,217,138,.08);}
+.cmpgo{background:var(--sel);color:#04140c;border:none;border-radius:8px;padding:7px 11px;font:700 10px/1 "Orbitron";
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:none;}
+.cmpgo.show{display:block;}
+.menu.cmp .r .rd{display:none;}
+.r .chk{width:13px;height:13px;border:1px solid var(--faint);border-radius:3px;flex:none;display:none;}
+.menu.cmp .r .chk{display:block;}
+.r.sel .chk{background:var(--sel);border-color:var(--sel);box-shadow:0 0 7px var(--sel);}
+.r.sel{color:var(--ink);border-left-color:var(--sel);}
+.r.cdis{opacity:.3;pointer-events:none;}
+
+.compare{position:absolute;inset:0;z-index:12;overflow:auto;padding:24px 30px 30px;
+  background:radial-gradient(120% 90% at 60% 30%,#0c1422,#05070d 70%);opacity:0;pointer-events:none;transition:opacity .25s;}
+.compare.show{opacity:1;pointer-events:auto;}
+.cmptitle{font:700 13px/1 "Orbitron";letter-spacing:.08em;color:var(--ink);margin:0 0 3px 70px;}
+.cmpsub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 14px 70px;}
+.cmpsec{font:700 10px/1 "Orbitron";letter-spacing:.22em;text-transform:uppercase;color:var(--dim);
+  margin:22px 0 9px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+.cmpgrid{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.cmpgrid>div{background:var(--pan);padding:7px 10px;display:flex;align-items:center;min-height:34px;}
+.cmphdr{font:700 10px/1.25 "JetBrains Mono";letter-spacing:.03em;justify-content:center;text-align:center;cursor:pointer;color:var(--ink2);}
+.cmphdr.g{color:var(--games);} .cmphdr.v{color:var(--film);}
+.cmphdr.g:hover,.cmphdr.v:hover{text-decoration:underline;}
+.cmphdr.lbl{justify-content:flex-start;color:var(--dim);font-family:"Orbitron";letter-spacing:.16em;text-transform:uppercase;cursor:default;}
+.cmprow{font-size:11.5px;color:var(--ink2);gap:8px;cursor:default;}
+.cmprow .cdot{width:9px;height:9px;border-radius:2px;flex:none;}
+.cmprow.shared{background:rgba(54,217,138,.055);}
+.cmpcell{justify-content:center;}
+.cmpcell .v{display:block;border-radius:50%;}
+.cmpcell.empty{color:var(--faint);}
+.cmprow:hover,.cmpcell:hover{outline:1px solid rgba(54,217,138,.4);outline-offset:-1px;}
+.cmpfoot{position:sticky;bottom:0;margin-top:16px;padding:11px 14px;background:rgba(8,12,20,.92);border:1px solid var(--line);
+  border-radius:10px;font:400 12px/1.55 "JetBrains Mono";color:var(--ink2);min-height:40px;backdrop-filter:blur(4px);}
+.cmpfoot .fn{color:var(--sel);font-weight:700;}
+.cmpback{position:absolute;left:18px;top:18px;z-index:13;background:rgba(10,16,26,.7);color:var(--ink);
+  border:1px solid var(--line);border-radius:8px;padding:9px 14px;font:600 11px/1 "JetBrains Mono";
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
+.cmpback:hover{border-color:var(--sel);}
+
+/* ===== v054 values-only comparison ===== */
+.cmphead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 6px 70px;}
+.cmphead .cmptitle{margin:0 0 3px 0;} .cmphead .cmpsub{margin:0;}
+.cmptop{position:sticky;top:0;z-index:2;margin:0 0 16px;padding:12px 14px;background:rgba(8,12,20,.92);
+  border:1px solid var(--line);border-radius:10px;font:400 12px/1.6 "JetBrains Mono";color:var(--ink2);
+  min-height:40px;backdrop-filter:blur(4px);}
+.cmptop .ohd{font:700 10px/1 "Orbitron";letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:9px;}
+.cmptop .orow{display:flex;align-items:baseline;gap:8px;margin:3px 0;}
+.cmptop .ok{font:700 9px/1.3 "Orbitron";letter-spacing:.1em;text-transform:uppercase;color:var(--faint);flex:none;width:78px;}
+.cmptop .ov{color:var(--sel);font-weight:700;flex:none;}
+.cmptop .ol{color:var(--ink2);}
+.cmptop .none{color:var(--faint);}
+.cmpov{margin-left:auto;color:var(--faint);font-size:10px;font-weight:700;letter-spacing:.02em;flex:none;}
+.cmprow.shared .cmpov{color:var(--sel);}
+.cmphdr .hf{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;}
+.cmphdr .hf.g{background:var(--games);} .cmphdr .hf.v{background:var(--film);}
+@media (max-width:760px){ .cmphead{margin-left:64px;} .cmptitle,.cmpsub{margin-left:64px;} }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="menu" id="menu"><div class="ttl">Career Compass</div><div class="cmpbar"><button class="cmptoggle" id="cmpToggle">compare</button><button class="cmpgo" id="cmpGo">compare (0)</button></div></nav>
+  <section class="stage" id="stage">
+    <svg class="torus" id="torus"></svg>
+    <div class="scene"><div class="world" id="world"></div></div>
+    <div class="now" id="now"><div class="rn" id="nowName"></div><div class="rm" id="nowMeta"></div></div>
+    <div class="ctrls" id="ctrls">
+      <button id="prev">‹ prev</button><button id="all">⤢ all roles</button><button id="next">next ›</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="callout" id="callout"></div>
+    <div class="fcard" id="fcard"></div>
+    <button class="backbtn" id="back">‹ back to split</button>
+    <button class="mutebtn" id="mute">sound: on</button>
+    <div class="hint" id="hint">drag to spin · wheel to zoom · &larr;&rarr; select · enter to isolate</div>
+    <div class="loading" id="loading">loading</div>
+    <div class="compare" id="compare"><button class="cmpback" id="cmpBack">‹ back</button><div id="cmpBody"></div><div class="cmpfoot" id="cmpFoot"></div></div>
+  </section>
+</div>
+
+<script>
+
+/* ===== taxonomy ===== */
+const SKILL_CATS={
+ art:{l:"Art & Composition",c:"#ff8095"},
+ mdl:{l:"Modeling & Sculpting",c:"#57c8a0"},
+ srf:{l:"Surfacing",c:"#d2a8ff"},
+ rig:{l:"Rigging & Animation",c:"#79c0ff"},
+ fx:{l:"FX & Simulation",c:"#ff9d5c"},
+ lrc:{l:"Lighting, Render & Comp",c:"#f2c14e"},
+ tec:{l:"Technical & Pipeline",c:"#3fd6ff"},
+};
+const SW_CATS_G={
+ eng:{l:"Engine",c:"#3fd6ff"},
+ dcc:{l:"DCC",c:"#57c8a0"},
+ scl:{l:"Sculpting",c:"#ff8095"},
+ tex:{l:"Texturing",c:"#d2a8ff"},
+ sim:{l:"Sim / Procedural",c:"#ff9d5c"},
+ dsn:{l:"2D & Design",c:"#f2c14e"},
+ scr:{l:"Scripting & VC",c:"#9aa6b2"},
+};
+const SW_CATS_V={
+ dcc:{l:"DCC",c:"#57c8a0"},
+ scl:{l:"Sculpting",c:"#ff8095"},
+ tex:{l:"Texturing",c:"#d2a8ff"},
+ sim:{l:"Sim",c:"#ff9d5c"},
+ lgt:{l:"Lighting & Render",c:"#f2c14e"},
+ cmp:{l:"Comp & Track",c:"#79c0ff"},
+ pnt:{l:"2D & Paint",c:"#ff9ec4"},
+ pip:{l:"Pipeline & Scripting",c:"#9aa6b2"},
+};
+
+/* abbreviation -> full name (used in detail cards); unmapped labels pass through */
+const EXPAND={
+ "Art fundamentals":"Art fundamentals","FX fundamentals":"FX fundamentals","CG fundamentals":"CG fundamentals",
+ "Art fund.":"Art fundamentals","Colour/art fund.":"Colour & art fundamentals",
+ "Subst. Designer":"Substance Designer","Subst. Painter":"Substance Painter",
+ "Procedural tex.":"Procedural texturing","HS modeling":"Hard-surface modeling",
+ "Topology/UV":"Topology & UV","UV/texel":"UV & texel density","UDIM/hero":"UDIM & hero assets",
+ "Char design":"Character design","Anim principles":"Animation principles","Anim systems":"Animation systems",
+ "Rigging aware":"Rigging awareness","Real-time light":"Real-time lighting","Real-time render":"Real-time rendering",
+ "PBR render":"PBR rendering","Mocap":"Motion capture","Mocap cleanup":"Motion-capture cleanup",
+ "Look-dev":"Look development","Lookdev integ.":"Look-dev integration","Lookdev pipeline":"Look-dev pipeline",
+ "Physics feats":"Physics features","Physics sim":"Physics simulation","Houdini sim":"Houdini simulation",
+ "Sim/rig FX":"Sim & rig FX","Timing/weight":"Timing & weight","Pipeline/cache":"Pipeline & caching",
+ "Rough anim":"Rough animation","Live-action tr.":"Live-action tracking","Object/body tr.":"Object & body tracking",
+ "Comp integ.":"Compositing integration","Rotoanim":"Roto-animation","Camera knowl.":"Camera knowledge",
+ "Camera project.":"Camera projection","Detail/realism":"Detail & realism","Material knowl.":"Material knowledge",
+ "Light/render bal.":"Light & render balance","Render knowl.":"Render knowledge","AOV mgmt":"AOV management",
+ "Material/shader":"Material & shader","Facial anim":"Facial animation","Creature anim":"Creature animation",
+ "Anatomy/physics":"Anatomy & physics","Pipeline arch.":"Pipeline architecture","Farm mgmt":"Render-farm management",
+ "Resource alloc.":"Resource allocation","Pipeline underst.":"Pipeline understanding","Asset mgmt":"Asset management",
+ "Paint/cleanup":"Paint & cleanup","Patience/deliv.":"Patience & delivery","Colour mgmt":"Colour management",
+ "Colour/comp":"Colour & composition","Mood/story":"Mood & story","UI implement.":"UI implementation",
+ "Cinematic lang.":"Cinematic language","Visual story":"Visual storytelling","Broad CG":"Broad CG knowledge",
+ "Python dev":"Python development","Workflow/tools":"Workflow & tools","Scripting/tools":"Scripting & tools",
+ "Industrial des.":"Industrial design","Perspective/light":"Perspective & light","Speed/adapt":"Speed & adaptability",
+ "Blocking/staging":"Blocking & staging","Blender/Maya":"Blender / Maya","Maya/Blender":"Maya / Blender",
+ "Maya/Hou/Nuke":"Maya / Houdini / Nuke","Substance":"Substance suite","DCC aware":"DCC awareness",
+ "Renderer aware":"Renderer awareness",
+};
+function fullName(s){return EXPAND[s]||s;}
+const LOREM="Description coming soon.";
+const READOUTS={"skills": {"2D elements": "Hand-made 2D textures, sprites and overlays (smoke, sparks, debris) used to dress or sell an effect. Often painted in Photoshop/After Effects and composited onto 3D simulations to add detail cheaply.", "2D/3D tracking": "Solving the motion of a real camera or object from footage so CG can be locked to the plate. Underpins matchmove and clean integration of effects into live action.", "2D/3D workflow": "Moving fluidly between painted 2D work and 3D scenes, projecting paintings onto geometry and back. Central to matte painting and environment finishing.", "3D animation": "Posing and timing 3D characters or cameras over a sequence to create believable motion. Built on the core animation principles of weight, spacing and staging.", "AOV mgmt": "Organising render passes (beauty, diffuse, specular, AO, cryptomatte and more) so compositors can rebuild and adjust the image. Clean AOV setups are what make a shot tweakable in comp.", "Accuracy": "Hitting exact positions, edges or tracks with no drift, frame after frame. Essential in roto, matchmove and any task where small errors break the illusion.", "Acting": "Giving a character intention, emotion and personality through performance, not just mechanical motion. The difference between a moving rig and a living character.", "Adaptability": "Switching tools, styles and tasks quickly as a production's needs change. Highly valued on small teams and fast pipelines.", "Anatomy": "Knowledge of muscle, bone and proportion so figures read as believable. Underlies sculpting, character art and convincing deformation.", "Anatomy/physics": "Combining anatomical structure with how flesh, muscle and cloth physically move. Key for rigs and creature work that deform realistically.", "Anim principles": "The classic fundamentals — timing, spacing, squash and stretch, anticipation, follow-through. The grammar every animator works in.", "Anim systems": "Building and wiring the state machines, blend trees and graphs that drive animation in an engine. Bridges authored clips and interactive gameplay.", "Art": "General visual fundamentals — form, value, colour and composition — applied across any discipline. The baseline literacy good work is built on.", "Art fundamentals": "Core skills of form, value, colour, perspective and composition. The foundation that separates competent CG from convincing imagery.", "Asset mgmt": "Tracking, versioning and organising the many files a shot or game needs. Keeps large teams from overwriting or losing work.", "Auto-rigging": "Building tools or templates that generate rigs automatically from a skeleton. Saves huge time when many characters share a structure.", "Blocking/staging": "Placing characters, props and cameras to read clearly and tell the story. The first pass that locks composition and staging before detail.", "Body mechanics": "Animating believable physical motion — walks, lifts, jumps — grounded in weight and balance. The technical backbone beneath performance.", "Brief to 3D": "Turning a written or visual brief into finished 3D work that matches intent. Requires interpreting reference and asking the right questions early.", "Broad CG": "A generalist's working knowledge across modelling, lookdev, lighting and comp. Lets one person carry a shot or fill gaps in a small team.", "CG fundamentals": "Understanding how 3D scenes, transforms, shading and rendering actually work under the hood. The base for any technical CG role.", "Camera blocking": "Setting camera placement, lensing and movement to frame the action. Defines how a sequence is read before animation refines it.", "Camera knowl.": "Understanding lenses, focal length, sensor size and how real cameras behave. Critical so CG cameras match the plate.", "Camera language": "Using shot size, angle and movement intentionally to convey meaning. The vocabulary of visual storytelling through the lens.", "Camera project.": "Projecting 2D paintings or photos onto 3D geometry from a camera to fake depth. A core matte-painting and set-extension trick.", "Camera work": "Designing and animating expressive camera moves that support the story. Spans framing, timing and lens choices.", "Char design": "Inventing characters with clear silhouette, personality and appeal. Balances visual storytelling with technical buildability.", "Cinematic lang.": "Knowing the conventions of film — coverage, continuity, pacing — to stage sequences that feel cinematic. Guides shot choices in cutscenes and trailers.", "Cinematography": "The craft of framing, lensing and lighting to compose moving images. Shapes mood and directs the viewer's eye.", "Collaboration": "Working smoothly across departments, sharing files and feedback without friction. The skill that keeps a pipeline moving.", "Colour mgmt": "Maintaining consistent colour across capture, work and delivery using colour spaces and LUTs (e.g. ACES). Prevents shots from shifting between stages.", "Colour theory": "Using hue, value and saturation relationships deliberately to guide the eye and set mood. Applies to concept, lighting and texturing alike.", "Colour/art fund.": "Combined colour theory and core art fundamentals applied to design work. Ensures pieces read well in value and palette.", "Colour/comp": "Balancing colour and composition together so an image reads clearly and feels intentional. Central to lighting and finishing.", "Communication": "Explaining ideas, giving and taking notes, and keeping stakeholders aligned. Often the deciding factor in senior and pipeline roles.", "Comp integ.": "Seamlessly blending CG elements into a live-action plate — matching grain, edges, light and grade. The final test of whether an effect is invisible.", "Complex FX": "Authoring advanced shader- or simulation-driven effects beyond standard particles. Demands both art sense and technical depth.", "Complex shots": "Handling shots with heavy overlap, occlusion or many moving parts. Requires planning, patience and clean technique.", "Compositing": "Layering rendered passes, plates and 2D elements into a final image. The stage where everything is balanced, graded and finished.", "Composition": "Arranging elements within the frame so the image reads clearly and leads the eye. A fundamental that underpins every visual discipline.", "Consistency": "Keeping look, scale and quality uniform across many assets or shots. What makes a body of work feel like one production.", "Continuity": "Ensuring lighting, props and action stay coherent across a sequence. Breaks in continuity pull the audience out of the story.", "Control design": "Designing intuitive rig controls so animators can pose efficiently. Good controls are invisible; bad ones slow a whole team.", "Creativity": "Generating fresh, fitting ideas and solving problems imaginatively. The engine behind concept and design work.", "Creature anim": "Animating non-human characters with believable, often invented locomotion. Blends study of real animals with imaginative performance.", "Cross-pipeline": "Understanding how data flows between departments and tools end to end. Lets a generalist or TD spot and fix bottlenecks.", "DCC APIs": "Programming against the scripting interfaces of tools like Maya, Houdini or Nuke. The basis of pipeline and TD tooling.", "Deformation": "How geometry bends and stretches when a rig moves — skinning, blendshapes, correctives. Determines whether a character looks solid or rubbery.", "Detail": "Adding the fine, believable touches — wear, grain, micro-surface — that sell realism. Often what separates student from pro work.", "Detail/realism": "Pushing surface and form detail until an asset reads as real. Demands strong reference discipline and patience.", "Digital painting": "Painting images digitally with full control of light, colour and texture. Core to concept art and matte painting.", "Drawing": "Foundational draughtsmanship — line, form, gesture and perspective. The bedrock skill of concept, storyboard and design.", "Editorial": "Cutting and timing shots together to build a sequence. Shapes pacing and informs previs and layout.", "Efficiency": "Working fast and lean without sacrificing quality, especially under deadline. Valued everywhere, essential in TD and pipeline roles.", "FX fundamentals": "Core principles of effects — forces, scale, timing, art-direction of chaos. The judgement that makes a sim look intentional.", "FX shaders": "Authoring shaders specifically for effects — fire, smoke, energy, dissolves. Bridges look-dev and real-time or offline FX.", "Facial anim": "Animating expression and lip-sync to convey emotion and dialogue. Among the most scrutinised areas of character work.", "Farm mgmt": "Running and monitoring the render farm — queues, priorities, failures. Keeps thousands of frames flowing to deadline.", "GUI building": "Creating artist-facing tool interfaces, typically in Qt/PySide. Makes pipeline tools usable by non-coders.", "Grain matching": "Matching film/sensor grain on CG or painted elements to the plate. A subtle but essential step for invisible integration.", "HS modeling": "Hard-surface modelling of mechanical, manufactured forms — weapons, vehicles, props. Prizes clean topology and crisp edges.", "High-res sculpt": "Sculpting fine, high-resolution detail (typically in ZBrush) for baking or hero assets. Where surface realism is born.", "Houdini sim": "Setting up and art-directing simulations in Houdini — fluids, pyro, RBD, cloth. The dominant toolset for film-grade FX.", "Industrial des.": "Designing believable manufactured objects with real-world logic and function. Grounds hard-surface concept and modelling.", "Integration": "Making CG sit convincingly inside a real or rendered scene across light, edge and grade. The hallmark of finished VFX.", "Iteration": "Refining work rapidly through many feedback passes. The everyday loop of production art.", "Keyframe": "Setting key poses by hand and controlling the in-betweens. The core technique of character animation.", "Keying": "Pulling clean mattes from green/blue screen footage. A daily compositing task that demands precision on edges and spill.", "Light/render bal.": "Balancing lighting choices against render cost and noise. Keeps shots both beautiful and affordable to render.", "Lighting": "Placing and shaping lights to define form, mood and focus. Drives the emotional read and realism of an image.", "Live-action tr.": "Tracking live-action footage so CG can be matched to it. The foundation of matchmove and integration.", "Look-dev": "Developing how an asset looks under light — shaders, textures, response. Locks the final material appearance before lighting.", "Lookdev integ.": "Ensuring look-dev choices hold up once assets reach lighting and comp. Closes the gap between isolated turntables and real shots.", "Lookdev pipeline": "The tools and standards that move shading and textures cleanly through a studio. Keeps look consistent across many assets.", "Matchmoving": "Reconstructing camera and object motion from footage for CG to inherit. The precise first step of most VFX shots.", "Material authoring": "Building reusable, physically-based materials from scratch. Defines how surfaces respond to light across a project.", "Material knowl.": "Understanding how real materials reflect, scatter and wear. Informs believable shading and texturing decisions.", "Material/shader": "Authoring materials and the shaders that drive them. Where surface look and render behaviour are defined.", "Mocap": "Working with motion-capture data to drive animation. Speeds realistic motion but needs skilled cleanup and retargeting.", "Mocap cleanup": "Fixing noise, foot-sliding and pops in captured data. Turns raw mocap into usable, polished animation.", "Modeling": "Building 3D geometry with clean, purposeful topology. The foundation asset every other department builds on.", "Mood/story": "Using image-making to evoke feeling and serve narrative. Lighting and concept live or die on this.", "Motion design": "Animating graphic elements, type and UI with timing and polish. Common in titles, interfaces and trailers.", "Motion eye": "An instinct for whether motion looks right — weight, speed, believability. The judgement that guides animation and FX.", "Multi-platform": "Designing assets and UI that work across consoles, PC and mobile. Demands awareness of varied resolutions and constraints.", "Multi-tasking": "Juggling many simultaneous tasks and shots without dropping quality. Routine in wrangling and production support.", "Object/body tr.": "Tracking specific objects or body parts in a plate, not just the camera. Feeds matchmove, roto and effects placement.", "On-set capture": "Gathering reference, HDRIs and measurements during the shoot. The data lighting and lookdev rely on for accuracy.", "Optimization": "Making assets and scenes run fast within a performance budget — polycount, draw calls, memory. Critical wherever real-time or render cost matters.", "Organisation": "Keeping files, naming and tasks tidy and findable. Unglamorous but vital to a smooth pipeline.", "PBR render": "Rendering with physically-based materials and lighting for predictable, realistic results. The modern standard across film and games.", "PBR shading": "Authoring shaders on physically-based principles so surfaces respond correctly to any lighting. The default shading model today.", "PBR texturing": "Painting texture maps (albedo, roughness, metal, normal) to the PBR standard. Ensures materials read correctly under any light.", "Pacing": "Controlling the rhythm and timing of a sequence. Shapes tension, clarity and audience engagement.", "Paint/cleanup": "Removing rigs, markers and unwanted elements from plates frame by frame. Painstaking but essential prep work.", "Particle/VFX": "Creating real-time or rendered particle effects — sparks, smoke, magic. Blends art direction with technical setup.", "Patience/deliv.": "Sustaining careful, accurate work over long repetitive tasks and delivering on time. The temperament roto and paint demand.", "Perspective/light": "Constructing correct perspective and convincing light in painted work. Foundational to matte painting and concept.", "Photogrammetry": "Building 3D assets and textures from photographs of real objects. A fast route to high realism.", "Photography": "Understanding exposure, lensing and composition through the camera. Informs lighting, matte painting and reference capture.", "Photorealism": "Achieving imagery indistinguishable from a photograph. The benchmark for high-end VFX integration.", "Physics feats": "Implementing physics-driven behaviours (cloth, ragdoll, secondary motion) in engine or rig. Adds believable reactive movement.", "Physics sim": "Simulating physical phenomena — cloth, fluids, rigid bodies, muscle. The core of creature and effects work.", "Pipeline": "The connected tools and steps that carry work through production. Smooth pipelines are what let big shows ship.", "Pipeline arch.": "Designing the overall structure and data flow of a studio's pipeline. A senior, systems-level responsibility.", "Pipeline underst.": "Knowing how the pipeline behaves so you can work within and troubleshoot it. Expected of wranglers and TDs.", "Pipeline/cache": "Managing simulation caches and how heavy data moves between steps. Keeps FX and creature work performant and shareable.", "Plausibility": "Designing things that feel believable within their world, even if invented. Grounds concept and creature design.", "Problem-solving": "Diagnosing issues and finding practical fixes under pressure. The defining trait of technical and TD roles.", "Procedural": "Building results from rules and parameters rather than by hand. Enables scalable, art-directable assets and effects.", "Procedural tex.": "Generating textures procedurally (e.g. in Substance Designer) for resolution-independent, tweakable surfaces. A staple of modern material work.", "Programming": "Writing reliable code to build tools and automation. The core competency of pipeline and software-leaning roles.", "Prototyping": "Quickly building rough working versions to test ideas. Speeds design decisions in UI and gameplay.", "Python dev": "Developing tools and automation in Python across DCCs and the pipeline. The lingua franca of studio TDs.", "Real-time light": "Lighting within an engine's real-time constraints — baked and dynamic. Demands a balance of beauty and performance.", "Real-time render": "Producing final imagery at interactive frame rates. The defining constraint of games and virtual production.", "Reference": "Gathering and using accurate visual reference to ground work. The discipline that keeps art honest.", "Render knowl.": "Understanding renderers, sampling, AOVs and noise to get clean results efficiently. Core to lighting and lookdev.", "Resource alloc.": "Distributing machines, licences and time across competing jobs. A wrangler's balancing act.", "Retopology": "Rebuilding clean, efficient topology over a high-res sculpt. Makes dense sculpts usable for animation and games.", "Rigging": "Building the skeletons and controls that make a model posable. The technical bridge between modelling and animation.", "Rigging aware": "Modelling and sculpting with how the asset will deform in mind. Prevents costly topology fixes later.", "Rotoanim": "Animating mattes that track moving subjects over time. Bridges roto and matchmove for complex shots.", "Rotoscoping": "Hand-drawing mattes to isolate elements frame by frame. The unglamorous backbone of clean comps.", "Rough anim": "Fast, loose animation passes that establish motion and timing. Used heavily in previs and blocking.", "Scripting": "Writing small scripts to automate repetitive tasks. A force-multiplier across nearly every CG role.", "Scripting/tools": "Building scripts and tools to extend software and speed work. Where art and engineering meet for TDs.", "Sculpting": "Shaping organic form and detail in 3D, usually in ZBrush. The heart of character and creature modelling.", "Sequencing": "Assembling shots and events into a coherent timed sequence. Central to cinematics and editorial.", "Shader authoring": "Writing shaders that define how surfaces render. Demands both visual judgement and technical math.", "Shader basics": "A working grasp of how shaders and materials are built. Enough to author and troubleshoot common looks.", "Shaders": "Programs that compute how surfaces respond to light. The control layer over every rendered material.", "Sim numerics": "Understanding the math and solver behaviour behind simulations. Lets a TD tune stable, art-directable results.", "Sim/rig FX": "Driving effects through rigs and simulation together — muscle, cloth, secondary motion. Common in creature FX.", "Simulation": "Computing physically-based motion of fluids, cloth, particles and more. The engine of effects and creature work.", "Skinning": "Binding geometry to a skeleton so it deforms cleanly. A make-or-break step for believable characters.", "Speed/adapt": "Working quickly and adjusting to shifting direction. Prized in storyboard and fast-turnaround work.", "Staging": "Arranging the scene so the key action reads instantly. A core animation and layout principle.", "Storytelling": "Conveying narrative and emotion through visual choices. The throughline behind concept, layout and animation.", "Surface realism": "Achieving believable micro-detail, wear and material response on surfaces. The texturing artist's primary goal.", "Texturing": "Creating the colour and surface-property maps that dress a model. Defines how an asset looks and feels.", "Timing/weight": "Tuning the timing and apparent mass of motion so it feels grounded. The soul of good animation and FX.", "Topology/UV": "Building clean edge flow and laying out UVs efficiently. Determines how well a model deforms and textures.", "Tracking": "Solving motion in footage so elements stay locked. Underpins matchmove, roto and integration.", "Troubleshooting": "Quickly finding and fixing what's broken in a scene, render or pipeline. The wrangler and TD's daily work.", "UDIM/hero": "Texturing hero assets across multiple high-res UDIM tiles. The standard for close-up film-quality detail.", "UI implement.": "Building game/app interfaces in engine and wiring them to logic. Where UI art becomes functional.", "UI/UX": "Designing interfaces that are clear, usable and pleasant. Balances visual design with how people actually interact.", "UV unwrapping": "Flattening 3D surfaces into 2D layouts for texturing. Good UVs prevent stretching and wasted texture space.", "UV/texel": "Managing UV layout and consistent texel density across assets. Keeps texture detail even and efficient.", "Version control": "Tracking changes to files and code so teams can work safely in parallel. The safety net of any pipeline.", "Visual design": "Composing strong, intentional imagery across form, colour and layout. A broad fundamental for any art role.", "Visual story": "Telling story through images and shot choices rather than words. The storyboard and previs artist's core skill.", "Workflow/tools": "Knowing and improving the day-to-day tools and methods of work. Helps generalists and TDs raise team speed.", "World-building": "Designing coherent environments and the logic that ties them together. Gives settings depth and believability."}, "software": {"3DEqualizer": "Industry-standard camera and object tracking software for VFX. The matchmove department's primary tool.", "3ds Max": "Autodesk's 3D suite, strong in modelling and used widely in games and archviz. A common alternative to Maya.", "After Effects": "Adobe's motion-graphics and 2D compositing tool. Used for titles, simple comps and 2D effect elements.", "Blender": "Free, open-source 3D suite covering modelling, sculpting, animation and rendering. Increasingly common in studios and indie work.", "Blender/Maya": "The two dominant general 3D packages; fluency in either (or both) is expected. Maya leads in studios, Blender in indie and growing elsewhere.", "C++": "A high-performance compiled language used for engine and core tool development. The backbone of game engines and heavy DCC plugins.", "C++/C#": "Compiled languages behind engine and gameplay code — C++ for performance, C# for Unity and tools. Common stack for technical game roles.", "Clip Studio": "A drawing and painting app favoured for illustration, comics and storyboards. Strong, natural-feeling line tools.", "DCC aware": "Familiarity with the major content-creation apps (Maya, Houdini, Nuke) without deep specialism. Enough to support and troubleshoot artists.", "Deadline": "A render-farm management and job-scheduling system. Distributes and tracks rendering across many machines.", "EmberGen": "Real-time fluid and pyro simulation tool for fast smoke, fire and explosions. Speeds up FX iteration dramatically.", "FaceFX": "Middleware for generating facial and lip-sync animation from audio. Common in games for large dialogue volumes.", "Figma": "Collaborative interface-design tool for UI/UX layout and prototyping. Standard for designing screens and flows.", "Flame": "Autodesk's high-end finishing and compositing system. Used for fast, premium conform and comp.", "Fusion": "Node-based compositing software (part of DaVinci Resolve). A capable alternative to Nuke.", "Git/Jira": "Version control (Git) and issue tracking (Jira) — the everyday backbone of collaborative development. Keeps code and tasks organised.", "HLSL/GLSL": "Shader languages for writing GPU code that runs in real-time engines. The tools of real-time shader authoring.", "Houdini": "SideFX's procedural 3D package, the industry leader for FX and simulation. Its node-based approach scales to enormous complexity.", "Illustrator": "Adobe's vector graphics tool for logos, icons and crisp 2D art. Common in UI and graphic design.", "Katana": "A look-development and lighting tool built for handling large, complex scenes. Standard in many film pipelines.", "Keyshot": "Fast, easy real-time renderer for product-style visualisation. Handy for quick concept renders.", "Krita": "Free, open-source digital painting application. A capable Photoshop alternative for illustration.", "Linux": "The operating system most studios run for rendering and pipeline. Comfort on the command line is expected of TDs.", "Mari": "High-end 3D paint tool built for film-quality, multi-UDIM texturing. The texture artist's workhorse for hero assets.", "Marmoset": "Real-time renderer and baker (Toolbag) used for portfolio shots and texture baking. Popular for showcasing game assets.", "Marvelous": "Marvelous Designer — cloth pattern and simulation software. The standard for creating realistic garments.", "Maya": "Autodesk's 3D suite and the studio standard for animation, rigging and modelling. The most widely required package in film and games.", "Maya/Blender": "The two leading general 3D packages; proficiency in either is the baseline. Maya dominates studios, Blender is fast-growing.", "Maya/Hou/Nuke": "The film trinity — Maya for assets/animation, Houdini for FX, Nuke for comp. Broad familiarity marks an experienced generalist or TD.", "Megascans": "Quixel's library of scanned, photoreal assets and materials. A fast source of realistic environment detail.", "Mocha": "Planar tracking and roto software, often used inside other comp tools. Excellent for tracking flat surfaces.", "MotionBuilder": "Autodesk's real-time character animation tool, strong with motion capture. Common for cleaning and retargeting mocap.", "Mudbox": "Autodesk's digital sculpting and texture-painting tool. A simpler alternative to ZBrush.", "Nuke": "Foundry's node-based compositor and the film-industry standard. Where shots are assembled and finished.", "OSL": "Open Shading Language, used to write physically-based shaders for renderers like Arnold. A look-dev/shading-TD tool.", "PDG/USD": "Houdini's PDG for procedural task graphs and USD for scene interchange. Modern building blocks of scalable pipelines.", "PFTrack": "Camera and object tracking software for matchmove. One of the main tools alongside 3DEqualizer.", "Perforce": "Version control built for large binary game assets. The studio standard for managing big game projects.", "Photoshop": "Adobe's image-editing and painting tool, used everywhere from concept to texture touch-up. The most universal 2D application.", "Premiere": "Adobe's video editing software. Used for editorial, previs cuts and reference assembly.", "Procreate": "iPad painting app popular for concept and illustration sketching. Valued for its natural, portable drawing.", "PureRef": "A lightweight tool for arranging reference images on a single board. A staple of every artist's setup.", "Python": "The dominant scripting language across DCCs and pipelines. The go-to for tools, automation and TD work.", "Python/MEL": "Python and Maya's MEL scripting languages for automating and customising Maya. Core to rigging and Maya tooling.", "Qt/PySide": "The framework for building artist tool interfaces in Python. How most studio tools get their GUIs.", "Qualoth": "A cloth-simulation plugin for Maya. Used for realistic garment and fabric dynamics.", "Qube": "A render-farm management and queuing system. Schedules and monitors distributed rendering.", "Quixel": "Quixel Suite/Megascans — scanned assets, materials and the Mixer tool. A fast pipeline to photoreal surfaces.", "Renderer": "The engine that turns a 3D scene into final images (e.g. Arnold, RenderMan, Karma, V-Ray). Fluency in at least one is expected for lighting and lookdev.", "Renderer aware": "Working knowledge of how production renderers behave — settings, AOVs, performance. Enough to support lighting and farm work.", "Resolve": "DaVinci Resolve — editing, colour grading and finishing software. Common for grade and conform.", "ShotGrid": "Production tracking and review software (formerly Shotgun). The hub for tasks, versions and notes in many studios.", "Silhouette": "A roto, paint and tracking tool built for VFX. A primary application for roto/paint artists.", "Storyboard Pro": "Toei/Toon Boom's dedicated storyboarding software. Combines drawing, timing and editorial in one tool.", "Subst. Designer": "Adobe Substance Designer — node-based procedural material authoring. The standard for building tweakable, tiling textures.", "Subst. Painter": "Adobe Substance Painter — 3D texture painting with smart, PBR-ready materials. The everyday texturing tool across games and film.", "Substance": "Adobe's Substance suite (Painter and Designer) for PBR texturing and material authoring. The dominant texturing toolset today.", "SynthEyes": "An affordable, fast camera and object tracker. A common matchmove tool, especially for smaller shops.", "Tractor": "Pixar's render-farm scheduler. Manages distributed rendering jobs at scale.", "USD": "Universal Scene Description — Pixar's open standard for exchanging 3D scenes. Increasingly the backbone of modern pipelines.", "Unity": "A widely used real-time game engine, strong in mobile and indie. C#-based and very approachable.", "Unreal": "Epic's real-time engine, dominant in AAA games and virtual production. The default for high-fidelity real-time work.", "Unreal Sequencer": "Unreal's cinematic timeline tool for building in-engine sequences. Used for cutscenes and real-time films.", "Unreal UMG": "Unreal's UI system (Unreal Motion Graphics) for building in-game interfaces. Where UI art is implemented in Unreal.", "VEX/Python": "Houdini's VEX language plus Python for procedural and tool work. The scripting core of FX and effects-TD work.", "World Machine": "A node-based terrain generation tool. Used to create large, realistic landscapes.", "Yeti/XGen": "Hair, fur and feather grooming tools (Yeti and Maya's XGen). The standard for creating and simulating groom.", "ZBrush": "Maxon's high-resolution digital sculpting application. The industry standard for organic detail and character work.", "Ziva": "Muscle, fat and skin simulation software for anatomically accurate creatures. Used for high-end deformation.", "ngSkinTools": "A Maya plugin that improves skin weighting with layers and tools. Speeds up clean character skinning."}};
+
+const ROLES=[{"n": "Technical Artist", "f": "g", "sk": [["Optimization", "tec", 5], ["Scripting", "tec", 5], ["Shaders", "srf", 4], ["Rigging", "rig", 4], ["Pipeline", "tec", 4], ["Communication", "tec", 4], ["Problem-solving", "tec", 3], ["Art", "art", 3]], "sw": [["Unreal", "eng", 5], ["Python", "scr", 5], ["Houdini", "sim", 5], ["Maya", "dcc", 4], ["Substance", "tex", 3], ["C++/C#", "scr", 3], ["Perforce", "scr", 3], ["ZBrush", "scl", 2]]}, {"n": "Concept Artist", "f": "g", "sk": [["Drawing", "art", 5], ["Visual design", "art", 5], ["Creativity", "art", 5], ["Communication", "tec", 4], ["Anatomy", "art", 3], ["Reference", "art", 3], ["Adaptability", "tec", 3]], "sw": [["Photoshop", "dsn", 5], ["Procreate", "dsn", 3], ["ZBrush", "scl", 3], ["Blender", "dcc", 2], ["Keyshot", "dsn", 2]]}, {"n": "3D Character Artist", "f": "g", "sk": [["Sculpting", "mdl", 5], ["Anatomy", "art", 5], ["Texturing", "srf", 5], ["Topology/UV", "mdl", 4], ["Char design", "art", 4], ["Optimization", "tec", 4], ["Rigging aware", "rig", 3], ["Communication", "tec", 3]], "sw": [["ZBrush", "scl", 5], ["Substance", "tex", 5], ["Maya", "dcc", 4], ["Blender", "dcc", 3], ["Photoshop", "dsn", 3], ["Marmoset", "tex", 3], ["Unreal", "eng", 3]]}, {"n": "3D Environment Artist", "f": "g", "sk": [["Modeling", "mdl", 5], ["PBR texturing", "srf", 5], ["Art fundamentals", "art", 5], ["World-building", "art", 4], ["Optimization", "tec", 4], ["Sculpting", "mdl", 3], ["Lighting", "lrc", 3], ["Communication", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Subst. Designer", "tex", 5], ["Unreal", "eng", 5], ["Subst. Painter", "tex", 4], ["ZBrush", "scl", 4], ["Quixel", "tex", 3], ["World Machine", "sim", 3], ["Photoshop", "dsn", 3]]}, {"n": "Prop Artist", "f": "g", "sk": [["HS modeling", "mdl", 5], ["UV unwrapping", "mdl", 5], ["PBR texturing", "srf", 5], ["Retopology", "mdl", 4], ["Optimization", "tec", 4], ["Composition", "art", 3], ["Iteration", "tec", 3]], "sw": [["Blender/Maya", "dcc", 5], ["Substance", "tex", 5], ["ZBrush", "scl", 4], ["Unreal", "eng", 4], ["Photoshop", "dsn", 3], ["Marmoset", "tex", 2]]}, {"n": "Hard Surface Artist", "f": "g", "sk": [["HS modeling", "mdl", 5], ["PBR texturing", "srf", 5], ["High-res sculpt", "mdl", 4], ["Retopology", "mdl", 4], ["UV/texel", "mdl", 4], ["Optimization", "tec", 4], ["Industrial des.", "art", 3], ["Composition", "art", 3]], "sw": [["Maya/Blender", "dcc", 5], ["Substance", "tex", 5], ["ZBrush", "scl", 4], ["Unreal", "eng", 4], ["Photoshop", "dsn", 3], ["3ds Max", "dcc", 3]]}, {"n": "Character Rigger", "f": "g", "sk": [["Rigging", "rig", 5], ["Skinning", "rig", 5], ["Anatomy", "art", 4], ["Scripting", "tec", 4], ["Problem-solving", "tec", 4], ["Anim principles", "rig", 3], ["Optimization", "tec", 3], ["Communication", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Python/MEL", "scr", 5], ["Unreal", "eng", 4], ["MotionBuilder", "dcc", 3], ["Blender", "dcc", 3], ["ngSkinTools", "dcc", 2], ["3ds Max", "dcc", 2]]}, {"n": "Technical Animator", "f": "g", "sk": [["Rigging", "rig", 5], ["Scripting", "tec", 5], ["Anim systems", "rig", 5], ["Skinning", "rig", 4], ["Optimization", "tec", 4], ["Physics feats", "fx", 3], ["Anim principles", "rig", 3], ["Communication", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Python/MEL", "scr", 5], ["Unreal", "eng", 5], ["MotionBuilder", "dcc", 4], ["FaceFX", "dcc", 3], ["Blender", "dcc", 2]]}, {"n": "3D Animator", "f": "g", "sk": [["Anim principles", "rig", 5], ["Body mechanics", "rig", 5], ["Keyframe", "rig", 5], ["Anim systems", "rig", 4], ["Acting", "art", 3], ["Mocap cleanup", "rig", 3], ["Staging", "art", 3], ["Communication", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Unreal", "eng", 5], ["MotionBuilder", "dcc", 4], ["Blender", "dcc", 3], ["Unity", "eng", 3], ["Python", "scr", 3]]}, {"n": "Shader Artist", "f": "g", "sk": [["Shader authoring", "srf", 5], ["PBR shading", "srf", 5], ["Optimization", "tec", 5], ["Real-time render", "lrc", 4], ["Look-dev", "srf", 4], ["Complex FX", "fx", 3], ["Communication", "tec", 4], ["Scripting", "tec", 3]], "sw": [["Unreal", "eng", 5], ["HLSL/GLSL", "scr", 5], ["Subst. Designer", "tex", 4], ["Houdini", "sim", 3], ["Subst. Painter", "tex", 3], ["Photoshop", "dsn", 3], ["Maya", "dcc", 3]]}, {"n": "Material Artist", "f": "g", "sk": [["Material authoring", "srf", 5], ["Procedural tex.", "srf", 5], ["Look-dev", "srf", 4], ["Colour theory", "art", 4], ["Optimization", "tec", 4], ["Photogrammetry", "mdl", 3], ["Shader basics", "srf", 3], ["Communication", "tec", 3]], "sw": [["Subst. Designer", "tex", 5], ["Subst. Painter", "tex", 5], ["Unreal", "eng", 4], ["Photoshop", "dsn", 3], ["ZBrush", "scl", 3], ["Maya", "dcc", 3]]}, {"n": "Lighting Artist", "f": "g", "sk": [["Lighting", "lrc", 5], ["Colour/comp", "art", 5], ["Mood/story", "art", 5], ["Real-time light", "lrc", 4], ["PBR render", "lrc", 4], ["Optimization", "tec", 4], ["Continuity", "lrc", 3], ["Communication", "tec", 3]], "sw": [["Unreal", "eng", 5], ["Maya", "dcc", 3], ["Photoshop", "dsn", 3], ["Unity", "eng", 3], ["Perforce", "scr", 2]]}, {"n": "FX Artist", "f": "g", "sk": [["Particle/VFX", "fx", 5], ["FX fundamentals", "fx", 5], ["Optimization", "tec", 5], ["Simulation", "fx", 4], ["FX shaders", "srf", 4], ["Procedural", "fx", 4], ["2D elements", "art", 3], ["Collaboration", "tec", 3]], "sw": [["Unreal", "eng", 5], ["Houdini", "sim", 5], ["Photoshop", "dsn", 3], ["Substance", "tex", 3], ["Maya", "dcc", 3], ["EmberGen", "sim", 3], ["After Effects", "dsn", 2]]}, {"n": "UI Artist", "f": "g", "sk": [["Visual design", "art", 5], ["UI/UX", "art", 5], ["Colour/art fund.", "art", 4], ["UI implement.", "tec", 4], ["Motion design", "art", 4], ["Communication", "tec", 4], ["Multi-platform", "tec", 3], ["Prototyping", "art", 3]], "sw": [["Figma", "dsn", 5], ["Photoshop", "dsn", 5], ["Illustrator", "dsn", 4], ["Unreal UMG", "eng", 4], ["After Effects", "dsn", 3], ["Unity", "eng", 3], ["Krita", "dsn", 2]]}, {"n": "Cinematic Artist", "f": "g", "sk": [["Cinematic lang.", "art", 5], ["Camera work", "rig", 5], ["Storytelling", "art", 5], ["Sequencing", "rig", 5], ["3D animation", "rig", 4], ["Lighting", "lrc", 4], ["Communication", "tec", 4], ["Pipeline", "tec", 3]], "sw": [["Unreal Sequencer", "eng", 5], ["Maya", "dcc", 4], ["MotionBuilder", "dcc", 4], ["Blender", "dcc", 3], ["Photoshop", "dsn", 3], ["After Effects", "dsn", 3], ["Unity", "eng", 3]]}, {"n": "Concept Artist", "f": "v", "sk": [["Drawing", "art", 5], ["Visual design", "art", 5], ["Creativity", "art", 5], ["Plausibility", "art", 4], ["Communication", "tec", 4], ["Reference", "art", 3], ["Anatomy", "art", 3]], "sw": [["Photoshop", "pnt", 5], ["Procreate", "pnt", 3], ["ZBrush", "scl", 3], ["Blender", "dcc", 2], ["Keyshot", "lgt", 2]]}, {"n": "Storyboard Artist", "f": "v", "sk": [["Drawing", "art", 5], ["Visual story", "art", 5], ["Cinematography", "art", 5], ["Pacing", "art", 4], ["Communication", "tec", 4], ["Speed/adapt", "tec", 4], ["Composition", "art", 4]], "sw": [["Photoshop", "pnt", 5], ["Storyboard Pro", "pnt", 5], ["Procreate", "pnt", 3], ["After Effects", "cmp", 3], ["Clip Studio", "pnt", 2]]}, {"n": "Previs Artist", "f": "v", "sk": [["Cinematography", "art", 5], ["Camera blocking", "rig", 5], ["Rough anim", "rig", 4], ["Editorial", "lrc", 4], ["Live-action tr.", "art", 4], ["Storytelling", "art", 4], ["Mocap", "rig", 3], ["Communication", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Unreal", "dcc", 4], ["MotionBuilder", "dcc", 3], ["3ds Max", "dcc", 3], ["Premiere", "cmp", 3], ["Nuke", "cmp", 2]]}, {"n": "Layout Artist", "f": "v", "sk": [["Camera language", "art", 5], ["Blocking/staging", "rig", 5], ["Composition", "art", 4], ["Continuity", "lrc", 4], ["Collaboration", "tec", 4], ["Editorial", "lrc", 3], ["Organisation", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Nuke", "cmp", 3], ["3ds Max", "dcc", 3], ["Blender", "dcc", 3], ["Unreal", "dcc", 3], ["After Effects", "cmp", 3], ["Houdini", "sim", 2]]}, {"n": "Matchmove Artist", "f": "v", "sk": [["Matchmoving", "tec", 5], ["Accuracy", "tec", 5], ["Object/body tr.", "tec", 4], ["Camera knowl.", "art", 4], ["Rotoanim", "lrc", 3], ["Scripting", "tec", 3], ["Comp integ.", "lrc", 3]], "sw": [["3DEqualizer", "cmp", 5], ["Maya", "dcc", 5], ["PFTrack", "cmp", 4], ["SynthEyes", "cmp", 3], ["Nuke", "cmp", 3], ["Python", "pip", 3], ["Mocha", "cmp", 2]]}, {"n": "3D Modeler", "f": "v", "sk": [["Modeling", "mdl", 5], ["Sculpting", "mdl", 5], ["Topology/UV", "mdl", 4], ["Art fundamentals", "art", 4], ["Brief to 3D", "mdl", 4], ["Detail/realism", "mdl", 4], ["Optimization", "tec", 3], ["Collaboration", "tec", 3]], "sw": [["Maya", "dcc", 5], ["ZBrush", "scl", 5], ["Mudbox", "scl", 3], ["Blender", "dcc", 3], ["3ds Max", "dcc", 3], ["Substance", "tex", 3], ["USD", "pip", 2]]}, {"n": "Texture Artist", "f": "v", "sk": [["PBR texturing", "srf", 5], ["Surface realism", "srf", 5], ["UV/texel", "mdl", 4], ["UDIM/hero", "srf", 4], ["Art fundamentals", "art", 4], ["Lookdev integ.", "srf", 4], ["Procedural", "srf", 3], ["Collaboration", "tec", 3]], "sw": [["Subst. Painter", "tex", 5], ["Mari", "tex", 5], ["ZBrush", "scl", 4], ["Maya", "dcc", 4], ["Photoshop", "pnt", 4], ["Subst. Designer", "tex", 3], ["Renderer", "lgt", 3], ["Houdini", "sim", 2]]}, {"n": "Environment Artist", "f": "v", "sk": [["Modeling", "mdl", 5], ["Art fundamentals", "art", 5], ["Texturing", "srf", 4], ["World-building", "art", 4], ["Sculpting", "mdl", 3], ["Look-dev", "srf", 3], ["Photogrammetry", "mdl", 3], ["Collaboration", "tec", 3]], "sw": [["Maya", "dcc", 5], ["ZBrush", "scl", 4], ["Substance", "tex", 4], ["Houdini", "sim", 3], ["Katana", "lgt", 3], ["Megascans", "tex", 3], ["Mari", "tex", 3], ["Nuke", "cmp", 3], ["Blender", "dcc", 3]]}, {"n": "Matte Painter", "f": "v", "sk": [["Digital painting", "art", 5], ["Perspective/light", "art", 5], ["Composition", "art", 5], ["Camera project.", "lrc", 5], ["Photorealism", "lrc", 4], ["Photography", "art", 4], ["2D/3D workflow", "lrc", 4], ["Detail", "art", 4]], "sw": [["Photoshop", "pnt", 5], ["Nuke", "cmp", 5], ["Maya", "dcc", 4], ["ZBrush", "scl", 3], ["Katana", "lgt", 2], ["Blender", "dcc", 2], ["PureRef", "pnt", 2]]}, {"n": "Look Development Artist", "f": "v", "sk": [["Material/shader", "srf", 5], ["Look-dev", "srf", 5], ["Material knowl.", "srf", 4], ["Light/render bal.", "lrc", 4], ["Consistency", "srf", 4], ["Reference", "art", 4], ["Texturing", "srf", 3], ["Collaboration", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Renderer", "lgt", 5], ["Katana", "lgt", 4], ["Subst. Painter", "tex", 4], ["Mari", "tex", 3], ["ZBrush", "scl", 3], ["Nuke", "cmp", 3], ["USD", "pip", 3]]}, {"n": "Shading TD", "f": "v", "sk": [["Shader authoring", "srf", 5], ["PBR shading", "srf", 5], ["Material authoring", "srf", 4], ["Lookdev pipeline", "tec", 4], ["Scripting", "tec", 4], ["Render knowl.", "lrc", 4], ["Efficiency", "tec", 4], ["Collaboration", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Renderer", "lgt", 5], ["Katana", "lgt", 4], ["OSL", "pip", 4], ["Python", "pip", 4], ["Houdini", "sim", 3], ["Substance", "tex", 3], ["USD", "pip", 3]]}, {"n": "Character Animator", "f": "v", "sk": [["Anim principles", "rig", 5], ["Body mechanics", "rig", 5], ["Keyframe", "rig", 5], ["Acting", "art", 4], ["Facial anim", "rig", 3], ["Creature anim", "rig", 3], ["Mocap", "rig", 3], ["Collaboration", "tec", 3]], "sw": [["Maya", "dcc", 5], ["MotionBuilder", "dcc", 3], ["Blender", "dcc", 2], ["3ds Max", "dcc", 2], ["ZBrush", "scl", 2]]}, {"n": "Rigging Artist", "f": "v", "sk": [["Rigging", "rig", 5], ["Deformation", "rig", 5], ["Anatomy/physics", "art", 4], ["Control design", "rig", 4], ["Scripting", "tec", 4], ["Problem-solving", "tec", 4], ["Auto-rigging", "tec", 3], ["Collaboration", "tec", 3]], "sw": [["Maya", "dcc", 5], ["Python", "pip", 5], ["Houdini", "sim", 3], ["MotionBuilder", "dcc", 3], ["Blender", "dcc", 3], ["C++", "pip", 3], ["3ds Max", "dcc", 2]]}, {"n": "Creature FX Artist", "f": "v", "sk": [["Physics sim", "fx", 5], ["Houdini sim", "fx", 5], ["Sim/rig FX", "fx", 4], ["Anatomy", "art", 4], ["Timing/weight", "rig", 4], ["Scripting", "tec", 4], ["Pipeline/cache", "tec", 3], ["Collaboration", "tec", 3]], "sw": [["Houdini", "sim", 5], ["Maya", "dcc", 4], ["VEX/Python", "pip", 4], ["Marvelous", "sim", 3], ["Yeti/XGen", "sim", 3], ["Ziva", "sim", 2], ["Qualoth", "sim", 2]]}, {"n": "FX TD", "f": "v", "sk": [["Physics sim", "fx", 5], ["Procedural", "fx", 5], ["Scripting/tools", "tec", 5], ["Sim numerics", "tec", 4], ["Motion eye", "fx", 4], ["Optimization", "tec", 4], ["Problem-solving", "tec", 4], ["Collaboration", "tec", 3]], "sw": [["Houdini", "sim", 5], ["VEX/Python", "pip", 5], ["Renderer", "lgt", 3], ["Maya", "dcc", 3], ["C++", "pip", 3], ["PDG/USD", "pip", 3], ["Nuke", "cmp", 2]]}, {"n": "Lighting TD", "f": "v", "sk": [["Lighting", "lrc", 5], ["Render knowl.", "lrc", 5], ["Colour/comp", "art", 4], ["AOV mgmt", "lrc", 4], ["Comp integ.", "lrc", 4], ["On-set capture", "lrc", 3], ["Scripting", "tec", 4], ["Optimization", "tec", 4]], "sw": [["Katana", "lgt", 5], ["Renderer", "lgt", 5], ["Nuke", "cmp", 4], ["Maya", "dcc", 4], ["Python", "pip", 4], ["USD", "pip", 3], ["Photoshop", "pnt", 3]]}, {"n": "TD - Generalist", "f": "v", "sk": [["Broad CG", "tec", 5], ["Python dev", "tec", 5], ["Workflow/tools", "tec", 4], ["Cross-pipeline", "tec", 4], ["Procedural", "fx", 4], ["Problem-solving", "tec", 4], ["Adaptability", "tec", 4], ["Communication", "tec", 4]], "sw": [["Maya", "dcc", 5], ["Houdini", "sim", 5], ["Python", "pip", 5], ["Qt/PySide", "pip", 4], ["Nuke", "cmp", 3], ["ShotGrid", "pip", 3], ["USD", "pip", 3]]}, {"n": "Pipeline TD", "f": "v", "sk": [["Programming", "tec", 5], ["Pipeline arch.", "tec", 5], ["DCC APIs", "tec", 4], ["Problem-solving", "tec", 5], ["Version control", "tec", 4], ["GUI building", "tec", 4], ["CG fundamentals", "tec", 4], ["Communication", "tec", 4]], "sw": [["Python", "pip", 5], ["Maya/Hou/Nuke", "dcc", 4], ["ShotGrid", "pip", 4], ["USD", "pip", 4], ["Git/Jira", "pip", 4], ["C++", "pip", 4], ["Qt/PySide", "pip", 4], ["Linux", "pip", 4]]}, {"n": "Render Wrangler / Render TD", "f": "v", "sk": [["Farm mgmt", "tec", 5], ["Troubleshooting", "tec", 5], ["Resource alloc.", "tec", 4], ["Scripting", "tec", 4], ["Pipeline underst.", "tec", 4], ["Multi-tasking", "tec", 4], ["Asset mgmt", "tec", 3], ["Communication", "tec", 4]], "sw": [["Deadline", "pip", 5], ["Tractor", "pip", 4], ["Python", "pip", 4], ["Linux", "pip", 4], ["Qube", "pip", 3], ["DCC aware", "dcc", 3], ["Renderer aware", "lgt", 3]]}, {"n": "Roto / Paint Artist", "f": "v", "sk": [["Rotoscoping", "lrc", 5], ["Paint/cleanup", "lrc", 5], ["Accuracy", "tec", 5], ["2D/3D tracking", "tec", 4], ["Complex shots", "lrc", 4], ["Grain matching", "lrc", 3], ["Patience/deliv.", "tec", 4], ["Communication", "tec", 3]], "sw": [["Silhouette", "cmp", 5], ["Nuke", "cmp", 5], ["Mocha", "cmp", 4], ["After Effects", "cmp", 3], ["Photoshop", "pnt", 3], ["Fusion", "cmp", 2]]}, {"n": "Compositor", "f": "v", "sk": [["Compositing", "lrc", 5], ["Integration", "lrc", 5], ["Photorealism", "lrc", 5], ["Keying", "lrc", 4], ["AOV mgmt", "lrc", 4], ["Colour mgmt", "lrc", 4], ["Tracking", "tec", 3], ["Scripting", "tec", 3]], "sw": [["Nuke", "cmp", 5], ["Mocha", "cmp", 3], ["Silhouette", "cmp", 3], ["After Effects", "cmp", 3], ["Resolve", "cmp", 2], ["Flame", "cmp", 2], ["Python", "pip", 3]]}];
+function mix(a,b,t){const pa=[parseInt(a.slice(1,3),16),parseInt(a.slice(3,5),16),parseInt(a.slice(5,7),16)],pb=[parseInt(b.slice(1,3),16),parseInt(b.slice(3,5),16),parseInt(b.slice(5,7),16)];return "#"+pa.map((v,i)=>Math.round(v+(pb[i]-v)*t).toString(16).padStart(2,"0")).join("");}
+const FLAG={g:"#3b6fe0",v:"#ff9b3d"}, VIOLET="#8a63ff";
+const colr=(r,sl)=> sl ? mix(FLAG[r.f],VIOLET,0.45) : FLAG[r.f];
+function catColor(key,sl,f){ const set=sl?(f==="g"?SW_CATS_G:SW_CATS_V):SKILL_CATS; return (set[key]||{c:"#8895a3"}).c; }
+
+const R=100;
+function radarSVG(ri,sl){
+  const r=ROLES[ri], c=colr(r,sl), uid=ri*2+sl;
+  const arr = sl ? r.sw : r.sk;
+  const N = arr.length || 1;
+  let s=`<svg viewBox="-150 -150 300 300">`;
+  s+=`<defs><radialGradient id="g${uid}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="${R}">`+
+     `<stop offset="0" stop-color="${c}" stop-opacity="0"/>`+
+     `<stop offset="0.65" stop-color="${c}" stop-opacity="0.10"/>`+
+     `<stop offset="1" stop-color="${c}" stop-opacity="0.42"/></radialGradient></defs>`;
+  for(let g=1;g<=5;g++){let pts=[];for(let k=0;k<N;k++){const a=(-90+k*360/N)*Math.PI/180,rr=R*g/5;pts.push((rr*Math.cos(a)).toFixed(1)+","+(rr*Math.sin(a)).toFixed(1));}s+=`<polygon class="ring" points="${pts.join(" ")}"/>`;}
+  for(let k=0;k<N;k++){const a=(-90+k*360/N)*Math.PI/180;s+=`<line class="spoke" x1="0" y1="0" x2="${(R*Math.cos(a)).toFixed(1)}" y2="${(R*Math.sin(a)).toFixed(1)}"/>`;}
+  let pts=[];for(let k=0;k<N;k++){const a=(-90+k*360/N)*Math.PI/180,rr=R*(arr[k][2]/5);pts.push((rr*Math.cos(a)).toFixed(1)+","+(rr*Math.sin(a)).toFixed(1));}
+  s+=`<polygon class="poly" points="${pts.join(" ")}" fill="url(#g${uid})" stroke="${c}" stroke-opacity="0.5"/>`;
+  for(let k=0;k<N;k++){const a=(-90+k*360/N)*Math.PI/180,v=arr[k][2],rr=R*(v/5),pc=catColor(arr[k][1],sl,r.f),pr=(2+v*0.7).toFixed(1),po=((0.5+v*0.1)*0.7).toFixed(2),cxp=(rr*Math.cos(a)).toFixed(1),cyp=(rr*Math.sin(a)).toFixed(1);s+=`<circle data-i="${k}" cx="${cxp}" cy="${cyp}" r="${pr}" fill="${pc}" fill-opacity="${po}" stroke="rgba(0,0,0,.35)" stroke-width=".5"/><circle class="pt" data-i="${k}" cx="${cxp}" cy="${cyp}" r="${Math.max(12,(+pr)+7).toFixed(1)}" fill="none" stroke="none" pointer-events="all"/>`;}
+  for(let k=0;k<N;k++){const a=(-90+k*360/N)*Math.PI/180,rr=R+24,x=(rr*Math.cos(a)),y=(rr*Math.sin(a));const anc=Math.abs(x)<8?"middle":(x>0?"start":"end");const dy=y<-4?-2:(y>4?8:3);s+=`<text class="lab" data-i="${k}" text-anchor="${anc}" x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}">${arr[k][0]}</text>`;}
+  s+=`<text class="stag" x="0" y="-150" fill="${c}">${sl?"Software":"Skills"}</text>`;
+  { const RIM=[[0,-R],[0,0],[0,R]]; RIM.forEach(([x,y],j)=>{ s+=`<circle class="rim" data-j="${j}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="0.6" fill="none" stroke="none"/>`; }); }
+  s+=`</svg>`;
+  return s;
+}
+
+/* ---- flat list of 72 slices: per-role pairs, skill then software, interleaved ---- */
+const SLICES=[];
+ROLES.forEach((r,ri)=>{ SLICES.push({ri,sl:0}); SLICES.push({ri,sl:1}); });
+const skUnit=role=>role*2, swUnit=role=>role*2+1;
+
+/* geometry: thickness is sized to the angular slot each slice owns
+   (360/N), minus an inter-slice gap, so the ring packs into a solid
+   ridged drum rather than floating paper-thin coins. */
+const SLICE_N=SLICES.length, STEP=360/SLICE_N, RADIUS=340, GAP=0.04, THICK=0.20;
+const DEPTH=+(4*RADIUS*Math.sin(STEP*Math.PI/360)*(1-GAP)*THICK).toFixed(1); /* THICK = fraction of the slot's full thickness */
+
+/* svg viewBox is 300u across a 480px box -> 1u = 1.6 disk-px (wall divs live in disk-px; caps in viewBox units) */
+const VBPX=1.6;
+/* fake directional light: shade each wall by how its outward normal faces a
+   fixed light (upper-left). No WebGL, but reads as lit forms with shadowed
+   sides. Front cap = bright radar; back cap = dark. */
+const LX=-0.32, LY=-0.95;
+function shadeWall(c,nx,ny){
+  const nl=Math.max(0,nx*LX+ny*LY), t=0.38+0.62*nl;       // 0.38 ambient .. 1 fully lit
+  const dark=mix(c,"#05070d",0.58), lite=mix(c,"#ffffff",0.30);
+  return t<0.62 ? mix(dark,c,t/0.62) : mix(c,lite,(t-0.62)/0.38);
+}
+function diskInner(ri,sl){
+  const r=ROLES[ri], arr=sl?r.sw:r.sk, N=arr.length||1;
+  const c=colr(r,sl), back=mix(c,"#05070d",0.55);
+  const Z=DEPTH/2, V=[];
+  for(let k=0;k<N;k++){const a=(-90+k*360/N)*Math.PI/180,rr=R*(arr[k][2]/5);V.push([rr*Math.cos(a),rr*Math.sin(a)]);}
+  let h=`<div class="lyr" style="transform:translateZ(${Z.toFixed(1)}px)">${radarSVG(ri,sl)}</div>`;
+  const bpts=V.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  h+=`<div class="lyr cap" style="transform:translateZ(${(-Z).toFixed(1)}px)"><svg viewBox="-150 -150 300 300"><polygon points="${bpts}" fill="${back}"/></svg></div>`;
+  let walls="";
+  for(let k=0;k<N;k++){
+    const a=V[k], b=V[(k+1)%N], mxv=(a[0]+b[0])/2, myv=(a[1]+b[1])/2, ml=Math.hypot(mxv,myv)||1;
+    const wc=shadeWall(c,mxv/ml,myv/ml);
+    const mx=(mxv*VBPX).toFixed(1), my=(myv*VBPX).toFixed(1);
+    const len=(Math.hypot(b[0]-a[0],b[1]-a[1])*VBPX).toFixed(2), ang=(Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI).toFixed(2);
+    walls+=`<div class="wall" style="width:${len}px;height:${DEPTH.toFixed(1)}px;`+
+           `background:linear-gradient(rgba(255,255,255,.10),rgba(0,0,0,.24)),${wc};`+
+           `transform:translate(-50%,-50%) translate3d(${mx}px,${my}px,0) rotateZ(${ang}deg) rotateX(90deg)"></div>`;
+  }
+  h+=`<div class="walls">${walls}</div>`;
+  return h;
+}
+const world=document.getElementById("world");
+const units=[];
+SLICES.forEach((s,ui)=>{
+  const u=document.createElement("div");u.className="unit";u.dataset.role=s.ri;u.dataset.ui=ui;
+  u.style.setProperty("--glow",colr(ROLES[s.ri],0));
+  const d=document.createElement("div");d.className="disk";d.dataset.sl=s.sl;d.innerHTML=diskInner(s.ri,s.sl);d.style.transform="scale(.5)";
+  u._disk=d;u.appendChild(d);
+  u._rims=d.querySelectorAll(".rim");
+  d.addEventListener("pointerenter",()=>{ if(iso===null && !dragging) requestPreview(s.ri); });
+  d.addEventListener("pointerleave",()=>{ if(iso===null) clearPreviewSoon(); });
+  u.addEventListener("pointerup",()=>{ if(!dragMoved && iso===null) isolate(s.ri); });
+  u._disk=d;world.appendChild(u);units.push(u);
+});
+
+/* ---- menu ---- */
+const menu=document.getElementById("menu");
+[["g","Games"],["v","Film"]].forEach(([f,label])=>{
+  const idx=ROLES.map((r,i)=>({r,i})).filter(o=>o.r.f===f);
+  const h=document.createElement("div");h.className="grp "+f;
+  h.innerHTML=`<span class="gdot"></span>${label}<span class="cnt">${idx.length}</span>`;menu.appendChild(h);
+  idx.forEach(({r,i})=>{
+    const el=document.createElement("div");el.className="r "+f;el.dataset.i=i;el.dataset.f=f;
+    el.innerHTML=`<span class="chk"></span><span class="rd"></span>${r.n}`;
+    el.addEventListener("click",()=>{ if(cmpMode) toggleCmpSel(i); else isolate(i); });
+    el.addEventListener("mouseenter",()=>{ if(!cmpMode && iso===null) selectFront(i); });
+    el.addEventListener("mouseleave",()=>clearPreviewSoon());
+    menu.appendChild(el);
+  });
+});
+const menuItems=[...document.querySelectorAll(".r")];
+
+/* ===== role comparison ===== */
+let cmpMode=false, cmpSel=[];
+let cmpData=null;
+/* merged software palette so cross-discipline rows colour correctly (Games + Film keys) */
+const SW_ALL=Object.assign({},SW_CATS_V,SW_CATS_G);
+const cmpToggle=document.getElementById("cmpToggle"), cmpGo=document.getElementById("cmpGo");
+const compareEl=document.getElementById("compare"), cmpBody=document.getElementById("cmpBody"), cmpFoot=document.getElementById("cmpFoot");
+function setCmpMode(on){
+  cmpMode=on; cmpSel=[];
+  menu.classList.toggle("cmp",on);
+  cmpToggle.classList.toggle("on",on);
+  cmpToggle.textContent=on?"cancel":"compare";
+  if(!on) closeCompare();           /* cancel returns to the normal tower */
+  refreshCmpSel();
+}
+function toggleCmpSel(i){            /* cross-discipline: any flag, capped at 3 */
+  const pos=cmpSel.indexOf(i);
+  if(pos>=0) cmpSel.splice(pos,1);
+  else { if(cmpSel.length>=3) return; cmpSel.push(i); }
+  refreshCmpSel();
+}
+function refreshCmpSel(){
+  menuItems.forEach(e=>{
+    const i=+e.dataset.i, sel=cmpSel.includes(i);
+    e.classList.toggle("sel",sel);
+    e.classList.toggle("cdis", cmpMode&&!sel&&cmpSel.length>=3);
+  });
+  cmpGo.textContent=`compare (${cmpSel.length})`;
+  cmpGo.classList.toggle("show", cmpMode&&cmpSel.length>=2);
+}
+function cmpItems(roleIdxs,kind){
+  const map=new Map();
+  roleIdxs.forEach(ri=>ROLES[ri][kind].forEach(([name,cat,imp])=>{
+    let o=map.get(name); if(!o){ o={name,cat,vals:{},count:0,sum:0}; map.set(name,o); }
+    o.vals[ri]=imp; o.count++; o.sum+=imp; o.cat=cat;
+  }));
+  /* rank by overlap (% of selected roles that have it), then by total weight */
+  return [...map.values()].sort((a,b)=> b.count-a.count || b.sum-a.sum || a.name.localeCompare(b.name));
+}
+function renderCmpSection(roleIdxs,kind){
+  const items=cmpItems(roleIdxs,kind), n=roleIdxs.length;
+  const catSet=kind==="sk"?SKILL_CATS:SW_ALL;
+  let h=`<div class="cmpgrid" style="grid-template-columns:minmax(150px,1.7fr) repeat(${n},1fr)">`;
+  h+=`<div class="cmphdr lbl">${kind==="sk"?"Skill":"Software"}</div>`;
+  roleIdxs.forEach(ri=>{ h+=`<div class="cmphdr ${ROLES[ri].f}" data-role="${ri}"><span class="hf ${ROLES[ri].f}"></span>${ROLES[ri].n}</div>`; });
+  items.forEach(it=>{
+    const c=(catSet[it.cat]||{c:"#8895a3"}).c, shared=it.count===n?" shared":"", pct=Math.round(it.count/n*100);
+    h+=`<div class="cmprow${shared}" data-kind="${kind}" data-name="${it.name}"><span class="cdot" style="background:${c}"></span>${it.name}<span class="cmpov">${pct}%</span></div>`;
+    roleIdxs.forEach(ri=>{
+      const imp=it.vals[ri];
+      if(imp==null) h+=`<div class="cmpcell empty">·</div>`;
+      else { const w=(4+imp*2.2).toFixed(1), o=(0.4+imp*0.12).toFixed(2);
+        h+=`<div class="cmpcell" data-kind="${kind}" data-name="${it.name}" title="${imp}/5"><span class="v" style="width:${w}px;height:${w}px;background:${c};opacity:${o}"></span></div>`; }
+    });
+  });
+  return h+`</div>`;
+}
+/* top bar: static overlap summary for the whole comparison (shared-by-all items) */
+function overlapSummary(roleIdxs){
+  const n=roleIdxs.length, line=(kind,label)=>{
+    const items=cmpData[kind], shared=items.filter(o=>o.count===n);
+    const names=shared.length?`<span class="ol">${shared.map(o=>o.name).join(", ")}</span>`:`<span class="none">none</span>`;
+    return `<div class="orow"><span class="ok">${label}</span><span class="ov">${shared.length}/${items.length}</span>${names}</div>`;
+  };
+  return `<div class="ohd">Overlap across ${n} roles \u00b7 shared by all</div>`+line("sk","Skills")+line("sw","Software");
+}
+/* bottom foot: description of the hovered skill / software */
+function showCmpReadout(kind,name){
+  const it=(kind==="sk"?cmpData.sk:cmpData.sw).find(o=>o.name===name), n=cmpData.roleIdxs.length;
+  const txt=(kind==="sk"?READOUTS.skills:READOUTS.software)[name]||LOREM;
+  const tag=it?(it.count===n?" \u00b7 shared by all":it.count===1?" \u00b7 unique":` \u00b7 ${it.count} of ${n}`):"";
+  cmpFoot.innerHTML=`<span class="fn">${fullName(name)}</span>${tag} \u2014 ${txt}`;
+}
+function openCompare(){
+  if(cmpSel.length<2) return;
+  const roleIdxs=cmpSel.slice(); isoBeep();
+  cmpData={roleIdxs,sk:cmpItems(roleIdxs,"sk"),sw:cmpItems(roleIdxs,"sw")};
+  const disc=[...new Set(roleIdxs.map(ri=>ROLES[ri].f))].map(f=>f==="g"?"Games":"Film").join(" + ");
+  cmpBody.innerHTML=
+    `<div class="cmphead"><div><div class="cmptitle">Comparing ${roleIdxs.length} roles</div>`+
+    `<div class="cmpsub">${disc} \u00b7 ranked by overlap \u00b7 dot opacity = importance (1\u20135)</div></div></div>`+
+    `<div class="cmptop">${overlapSummary(roleIdxs)}</div>`+
+    `<div class="cmpsec">Skills</div>`+renderCmpSection(roleIdxs,"sk")+
+    `<div class="cmpsec">Software</div>`+renderCmpSection(roleIdxs,"sw");
+  cmpFoot.style.display="";
+  cmpFoot.innerHTML=`<span style="color:var(--faint)">hover a row to read what it means \u00b7 tap a role header to open it</span>`;
+  cmpBody.querySelectorAll(".cmprow[data-name],.cmpcell[data-name]").forEach(el=>el.addEventListener("pointerenter",()=>showCmpReadout(el.dataset.kind,el.dataset.name)));
+  cmpBody.querySelectorAll(".cmphdr[data-role]").forEach(el=>el.addEventListener("click",()=>{ setCmpMode(false); isolate(+el.dataset.role); }));
+  compareEl.classList.add("show");
+}
+function closeCompare(){ compareEl.classList.remove("show"); }
+cmpToggle.addEventListener("click",()=>setCmpMode(!cmpMode));
+cmpGo.addEventListener("click",openCompare);
+document.getElementById("cmpBack").addEventListener("click",closeCompare);
+
+/* ---- legend ---- */
+const legend=document.getElementById("legend");
+function renderLegend(flag){
+  let h=`<div class="lt">Skill category</div>`+
+    Object.values(SKILL_CATS).map(o=>`<div class="lrow"><span class="ls" style="background:${o.c}"></span>${o.l}</div>`).join("");
+  if(flag){ const sw=flag==="g"?SW_CATS_G:SW_CATS_V;
+    h+=`<div class="lt" style="margin-top:10px">Software \u00b7 ${flag==="g"?"Games":"VFX"}</div>`+
+       Object.values(sw).map(o=>`<div class="lrow"><span class="ls" style="background:${o.c}"></span>${o.l}</div>`).join("");
+  } else { h+=`<div class="lnote">Vertices coloured by category \u00b7 isolate a role to see its software categories</div>`; }
+  legend.innerHTML=h;
+}
+
+/* ---- camera + state ---- */
+let rx=-25, ry=0, zoomZ=-160;
+let dirty=true;  /* render-loop gate: frame() only does work when something changed (stops idle 60fps churn) */
+let rafId=null;
+let lastRyForTorus=-9999, torusRectsCached=false, stageRect=null;
+let camVer=0, lastTorusVer=-1;  /* bumps on any camera change (rx/ry/zoom); used as the cache key for all screen-space readbacks */
+let followUntil=0;  /* while now<followUntil, recompute the focus card every frame so it tracks the disk through its slide-in transition */
+/* scheduleFrame inlined into mark() */
+function mark(){ dirty=true; if(rafId===null) rafId=requestAnimationFrame(frame); }
+let iso=null, preview=null, previewTimer=null, selIdx=null, vfocus=null;
+let hovering=false, dragging=false, dragMoved=false, tweening=false;
+const ISO_DZ=58, ISO_FRONT=150, BASE=1.15;
+const VF_SCALE=1.3, VF_X=-108;  /* vertex-focus: enlarge + offset onto its own side, clear of the card */
+const lastRole=ROLES.length-1;
+function norm(d){d=((d%360)+360)%360;return d>180?d-360:d;}
+function tweenCam(trx,try_,ms){const srx=rx,sry=ry,t0=performance.now();tweening=true;(function step(now){const p=Math.min(1,(now-t0)/ms),e=1-Math.pow(1-p,3);rx=srx+(trx-srx)*e;ry=sry+(try_-sry)*e;applyWorld();if(p<1)requestAnimationFrame(step);else tweening=false;})(performance.now());}
+
+function applyWorld(){ camVer++; world.style.transform=`scale(${BASE}) translateZ(${zoomZ}px) rotateX(${rx}deg) rotateY(${ry}deg)`; drawTorus(); mark(); }
+const torusPaths=[];
+function initTorus(){
+  const t=document.getElementById("torus"); if(!t) return;
+  t.innerHTML=""; torusPaths.length=0;
+  const N=units.length;
+  for(let i=0;i<N;i++){
+    const cnt=(units[i]._rims&&units[i]._rims.length)||3, row=[];
+    for(let j=0;j<cnt;j++){
+      const p=document.createElementNS("http://www.w3.org/2000/svg","path");
+      p.setAttribute("fill","none"); t.appendChild(p); row.push(p);
+    }
+    torusPaths.push(row);
+  }
+}
+function drawTorus(){
+  const t=document.getElementById("torus"); if(!t) return;
+  if(iso!==null){ t.style.display="none"; return; }
+  t.style.display="";
+  const N=units.length;
+  if(camVer!==lastTorusVer||!stageRect){
+    stageRect=stage.getBoundingClientRect(); lastTorusVer=camVer;
+    for(let i=0;i<N;i++){
+      const a=units[i]._rims, b=units[(i+1)%N]._rims, row=torusPaths[i];
+      if(!row) continue;
+      for(let j=0;j<row.length;j++){
+        const p=row[j], aj=a&&a[j], bj=b&&b[j];
+        if(!aj||!bj){ p._ax=p._ay=p._bx=p._by=null; continue; }
+        const ar=aj.getBoundingClientRect(), br=bj.getBoundingClientRect();
+        p._ax=ar.left+ar.width/2-stageRect.left; p._ay=ar.top+ar.height/2-stageRect.top;
+        p._bx=br.left+br.width/2-stageRect.left; p._by=br.top+br.height/2-stageRect.top;
+      }
+    }
+  }
+  for(let i=0;i<N;i++){
+    const row=torusPaths[i]; if(!row) continue;
+    const f=((Math.cos((i*STEP+ry)*Math.PI/180)+1)/2 + (Math.cos(((i+1)*STEP+ry)*Math.PI/180)+1)/2)/2;
+    const sa=(0.04+f*0.15).toFixed(3), sw=(0.5+f*0.6).toFixed(2);
+    for(let j=0;j<row.length;j++){
+      const p=row[j];
+      if(p._ax==null){ p.setAttribute("d",""); continue; }
+      p.setAttribute("d",`M${p._ax.toFixed(1)} ${p._ay.toFixed(1)}L${p._bx.toFixed(1)} ${p._by.toFixed(1)}`);
+      p.setAttribute("stroke",`rgba(150,170,210,${sa})`);
+      p.setAttribute("stroke-width",sw);
+    }
+  }
+}
+
+let audioCtx=null;
+let muted=false;
+try{ const s=localStorage.getItem("cc_muted"); if(s!==null) muted=(s==="1");
+  else if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) muted=true; }catch(_){ }
+function audioOn(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); }catch(_){ } }
+const SCALE=[392,440,493.88,587.33,659.25,783.99];
+function beep(freq,dur,vol,type,when){
+  if(muted||!audioCtx) return;
+  try{
+    const t=audioCtx.currentTime+(when||0), o=audioCtx.createOscillator(), g=audioCtx.createGain(), bf=audioCtx.createBiquadFilter();
+    o.type="sine";
+    o.frequency.setValueAtTime(freq*1.05,t);
+    o.frequency.exponentialRampToValueAtTime(freq,t+dur*0.85);
+    bf.type="lowpass"; bf.frequency.setValueAtTime(Math.min(2000,freq*2.6),t); bf.Q.value=1.2;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(vol,t+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(bf).connect(g).connect(audioCtx.destination);
+    o.onended=()=>{try{o.disconnect();g.disconnect();bf.disconnect();}catch(_){}};
+    o.start(t); o.stop(t+dur+0.06);
+  }catch(_){ }
+}
+function hoverBeep(k){ const f=SCALE[(((k||0)%SCALE.length)+SCALE.length)%SCALE.length]; beep(f*(0.997+Math.random()*0.006),0.06,0.011); }
+function clickBeep(level){ const f=SCALE[Math.max(0,Math.min(SCALE.length-1,(level||3)-1))]; beep(f,0.10,0.024); beep(f*1.5,0.12,0.016,null,0.06); }
+function isoBeep(){ beep(330,0.11,0.022); beep(494,0.13,0.016,null,0.07); }
+function backBeep(){ beep(392,0.12,0.022); beep(262,0.14,0.016,null,0.07); }
+window.addEventListener("pointerdown",audioOn);
+const muteBtn=document.getElementById("mute");
+function renderMute(){ muteBtn.textContent=muted?"sound: off":"sound: on"; muteBtn.classList.toggle("off",muted); }
+muteBtn.addEventListener("click",()=>{ muted=!muted; try{localStorage.setItem("cc_muted",muted?"1":"0");}catch(_){ } renderMute(); if(!muted) audioOn(); });
+renderMute();
+
+function unitTf(i){return `rotateY(${(i*STEP).toFixed(2)}deg) translateZ(${RADIUS}px) rotateY(90deg)`;}
+function layout(){
+  setHover(null);
+  units.forEach((u,i)=>{
+    const sl=SLICES[i].sl, role=SLICES[i].ri, dk=u._disk;
+    dk.classList.toggle("flat", iso!==null);
+    if(iso!==null){
+      if(role===iso){
+        u.classList.add("focus");
+        u.style.transform=`translateZ(${ISO_FRONT}px) scale(1.35)`;
+        u.style.opacity="1"; u.style.filter="";
+        dk.classList.remove("gone","dim");
+        if(vfocus && vfocus.role===iso){
+          if(sl===vfocus.sl){ dk.classList.remove("nolab"); dk.style.transform=`translateX(${vfocus.gx}px) scale(${(0.5*VF_SCALE).toFixed(3)})`; dk.style.opacity="1"; dk.style.pointerEvents="auto"; }
+          else { dk.classList.add("nolab"); dk.style.transform=`translateX(${vfocus.gx}px) scale(${(0.5*VF_SCALE*0.55).toFixed(3)})`; dk.style.opacity="0.12"; dk.style.pointerEvents="none"; }
+        } else {
+          dk.classList.remove("nolab");
+          dk.style.transform=`translateX(${(sl===0?-1:1)*200}px) scale(.5)`;
+          dk.style.opacity=""; dk.style.pointerEvents="";
+        }
+      }else{
+        u.classList.remove("focus");
+        dk.classList.remove("dim"); dk.classList.add("gone");
+        u.style.transform=`rotateY(${(i*STEP).toFixed(2)}deg) translateZ(${(RADIUS*0.45).toFixed(0)}px) rotateY(90deg) scale(.4)`;
+        u.style.opacity="1"; u.style.filter="";
+      }
+      return;
+    }
+    u.classList.remove("focus");
+    dk.classList.remove("gone","dim","nolab"); dk.style.transform="scale(.5)"; dk.style.opacity=""; dk.style.pointerEvents="";
+    u.style.transform=unitTf(i);
+    u.style.opacity="1"; u.style.filter="";
+  });
+  markMenu(iso);
+  mark();
+}
+function isolate(ri){
+  setPreview(null);
+  isoBeep();
+  vfocus=null;
+  document.getElementById("fcard").classList.remove("show");
+  document.getElementById("back").classList.remove("show");
+  units.forEach(u=>u._disk.classList.remove("dim"));
+  iso=ri; ry=norm(ry); applyWorld(); layout(); tweenCam(0,0,600);
+  const r=ROLES[ri];
+  document.getElementById("nowName").textContent=r.n;
+  document.getElementById("nowMeta").textContent=(r.f==="g"?"Games":"Film")+" \u00b7 skills (left) + software (right)";
+  document.getElementById("now").classList.add("show");
+  document.getElementById("ctrls").classList.add("show");
+  document.getElementById("hint").textContent="tap a skill or software point to expand it \u00b7 drag to orbit (\u00b120\u00b0) \u00b7 prev / next \u00b7 all roles";
+  renderLegend(r.f);
+}
+function rebuild(){
+  setPreview(null);
+  backBeep();
+  vfocus=null;
+  document.getElementById("fcard").classList.remove("show");
+  document.getElementById("back").classList.remove("show");
+  document.getElementById("callout").classList.remove("show");
+  units.forEach(u=>u._disk.classList.remove("dim"));
+  iso=null; layout(); tweenCam(-25,ry,500); selIdx=null;
+  document.getElementById("now").classList.remove("show");
+  document.getElementById("ctrls").classList.remove("show");
+  document.getElementById("hint").textContent="drag to spin \u00b7 wheel to zoom \u00b7 \u2190\u2192 select \u00b7 enter to isolate";
+  renderLegend(null);
+}
+function markMenu(i){menuItems.forEach(e=>e.classList.toggle("on",+e.dataset.i===i));}
+
+function setPreview(role){
+  if(role!==null && iso!==null) return;
+  if(role===preview) return;
+  if(preview!==null){ [units[skUnit(preview)],units[swUnit(preview)]].forEach(u=>{ if(u){ u.classList.remove("preview"); u.style.transition=""; } }); }
+  preview=role;
+  const co=document.getElementById("callout");
+  if(role===null){ co.classList.remove("show"); if(iso===null) layout(); return; }
+  [units[skUnit(role)],units[swUnit(role)]].forEach(u=>{ u.classList.add("preview"); u.style.transition="none"; });
+  co.innerHTML=`<span class="ctxt">${ROLES[role].n}</span><i class="lead"></i>`; co.classList.add("show");
+  mark();
+}
+function requestPreview(i){ clearTimeout(previewTimer); setPreview(i); }
+function clearPreviewSoon(){ clearTimeout(previewTimer); previewTimer=setTimeout(()=>setPreview(null),90); }
+function decorate(){
+  const {role,sl,k}=vfocus, r=ROLES[role], arr=sl?r.sw:r.sk, N=arr.length, acc=catColor(arr[k][1],sl,r.f);
+  const disk=units[role*2+sl]._disk, svg=disk.querySelector("svg");
+  const P=j=>{j=((j%N)+N)%N;const a=(-90+j*360/N)*Math.PI/180,rr=R*(arr[j][2]/5);return (rr*Math.cos(a)).toFixed(1)+","+(rr*Math.sin(a)).toFixed(1);};
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("class","hlg"); g.style.setProperty("--acc",acc);
+  g.innerHTML=`<polygon class="hlwedge" points="0,0 ${P(k-1)} ${P(k)} ${P(k+1)}"/>`+
+    `<line class="hlspoke" x1="0" y1="0" x2="${P(k).split(",")[0]}" y2="${P(k).split(",")[1]}"/>`+
+    `<circle class="hldot" cx="${P(k).split(",")[0]}" cy="${P(k).split(",")[1]}" r="${(4+arr[k][2]*0.9).toFixed(1)}"/>`;
+  svg.appendChild(g);
+  const lab=svg.querySelector(`text.lab[data-i="${k}"]`);
+  if(lab){ lab.dataset.short=lab.textContent; lab.textContent=fullName(arr[k][0]); lab.classList.add("hi"); }
+  requestAnimationFrame(()=>g.classList.add("on"));
+}
+function undecorate(){
+  if(vfocus){
+    const u=units[vfocus.role*2+vfocus.sl]; if(u){ u._disk.querySelectorAll(".hlg").forEach(g=>g.remove()); u._disk.querySelectorAll("text.lab.hi").forEach(t=>{ if("short" in t.dataset){ t.textContent=t.dataset.short; delete t.dataset.short; } t.classList.remove("hi"); }); }
+  }
+}
+function setCard(html,acc){
+  const fc=document.getElementById("fcard"); fc.style.setProperty("--acc",acc); fc._cache=null;
+  if(fc.classList.contains("show")){ fc.style.opacity="0"; clearTimeout(fc._t); fc._t=setTimeout(()=>{fc.innerHTML=html;fc.style.opacity="";fc._cache=null;mark();},170); }
+  else { fc.innerHTML=html; fc.classList.add("show"); }
+  mark();
+}
+function nearestVertex(cx,cy){
+  if(iso===null) return null;
+  let best=null,bd=26;
+  [units[skUnit(iso)],units[swUnit(iso)]].forEach(u=>{
+    if(!u) return;
+    const sl=+u._disk.dataset.sl;
+    if(vfocus && sl!==vfocus.sl) return;
+    u.querySelectorAll(".disk circle[data-i]:not(.pt)").forEach(c=>{
+      const r=c.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2, d=Math.hypot(cx-x,cy-y);
+      if(d<bd){ bd=d; best={sl,k:+c.dataset.i}; }
+    });
+  });
+  return best;
+}
+let hov=null;
+function setHover(hit){
+  const key=hit?hit.sl+":"+hit.k:null, cur=hov?hov.sl+":"+hov.k:null;
+  if(key===cur) return;
+  units.forEach(u=>u.querySelectorAll(".hovring").forEach(e=>e.remove()));
+  hov=hit;
+  if(!hit || iso===null) return;
+  if(vfocus && vfocus.sl===hit.sl && vfocus.k===hit.k) return;
+  const mu=units[iso*2+hit.sl], disk=mu&&mu._disk, svg=disk&&disk.querySelector("svg");
+  const base=svg&&svg.querySelector(`circle[data-i="${hit.k}"]:not(.pt)`);
+  if(!base) return;
+  const ring=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  ring.setAttribute("class","hovring");
+  ring.setAttribute("cx",base.getAttribute("cx")); ring.setAttribute("cy",base.getAttribute("cy"));
+  ring.setAttribute("r",(parseFloat(base.getAttribute("r"))+3).toFixed(1));
+  ring.style.setProperty("--acc",base.getAttribute("fill"));
+  svg.appendChild(ring);
+  hoverBeep(hit.k);
+}
+function focusVertex(role,sl,k){
+  if(iso!==role) return;
+  const r=ROLES[role], arr=sl?r.sw:r.sk, it=arr[k];
+  clickBeep(it[2]);
+  const set=sl?(r.f==="g"?SW_CATS_G:SW_CATS_V):SKILL_CATS, cat=set[it[1]]||{l:"",c:"#8895a3"};
+  undecorate();
+  vfocus={role,sl,k,side: sl===0?"right":"left", gx: sl===0?VF_X:-VF_X};
+  followUntil=performance.now()+680;
+  /* snap the focused role's two disks straight to their focus transform (no slide), so the
+     card can measure the FINAL graph bounding box on the very first frame. Without this the
+     first click reads a mid-transition box and the card lands inside the graph; the second
+     click works only because the disk is already settled. Re-enable transitions next frame
+     so exit/return still animates. */
+  const _da=units[role*2]._disk, _db=units[role*2+1]._disk;
+  _da.classList.add("snap"); _db.classList.add("snap");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ _da.classList.remove("snap"); _db.classList.remove("snap"); }));
+  layout(); decorate();
+  setCard(`<div class="ft">${sl?"Software":"Skill"} \u00b7 ${r.n}</div>`+
+    `<div class="fbar">${[1,2,3,4,5].map(n=>`<i class="${n<=it[2]?'on':''}"></i>`).join("")}</div>`+
+    `<div class="fmeta">importance ${it[2]}/5 \u00b7 ${cat.l}</div>`+
+    `<div class="fdesc">${(READOUTS[sl?"software":"skills"][it[0]]||LOREM)}</div>`, cat.c);
+  document.getElementById("back").classList.add("show");
+  document.getElementById("legend").style.display="none";
+  document.getElementById("nowMeta").textContent=(r.f==="g"?"Games":"Film")+" \u00b7 "+(sl?"software":"skills")+" detail";
+  document.getElementById("hint").textContent="tap another point to compare \u00b7 back / esc to return \u00b7 drag to orbit";
+}
+function exitVertex(){
+  if(!vfocus) return;
+  backBeep();
+  undecorate(); vfocus=null; layout();
+  if(iso!==null){ const r=ROLES[iso]; document.getElementById("nowMeta").textContent=(r.f==="g"?"Games":"Film")+" \u00b7 skills (left) + software (right)"; }
+  document.getElementById("fcard").classList.remove("show");
+  document.getElementById("fcard").style.top=""; document.getElementById("fcard").style.transform="";
+  document.getElementById("fcard").style.left=""; document.getElementById("fcard").style.right="";
+  document.getElementById("legend").style.display="";
+  document.getElementById("back").classList.remove("show");
+  document.getElementById("hint").textContent="tap a skill or software point to expand it \u00b7 drag to orbit (\u00b120\u00b0) \u00b7 prev / next";
+}
+
+function frame(){
+  rafId=null;
+  const following = !!vfocus && performance.now()<followUntil;
+  if(dirty||following){
+  dirty=false;
+  if(iso===null){
+    for(let i=0;i<units.length;i++){
+      if(preview!==null && SLICES[i].ri===preview){ units[i].style.opacity="1"; continue; }
+      const f=(Math.cos((i*STEP+ry)*Math.PI/180)+1)/2;
+      units[i].style.opacity = f>=0.5 ? "1" : (0.18+f*0.9).toFixed(2);
+    }
+  }
+  if(preview!==null && iso===null){
+    const ui=skUnit(preview), u=units[ui];
+    u.style.transform=unitTf(ui);
+    const co=document.getElementById("callout"), lead=co.querySelector(".lead");
+    if(!co._cache||co._cache.preview!==preview||co._cache.ver!==camVer){
+      const d=u._disk.getBoundingClientRect(), sr=stage.getBoundingClientRect();
+      const cx=d.left+d.width/2-sr.left, cy=d.top-sr.top-14;
+      co.style.left=cx+"px"; co.style.top=cy+"px";
+      const tx=d.left+d.width/2-sr.left, ty=d.top+d.height/2-sr.top, ax=cx, ay=cy+18;
+      const ang=Math.atan2(ty-ay,tx-ax)*180/Math.PI, len=Math.min(240,Math.hypot(tx-ax,ty-ay));
+      lead.style.width=len+"px"; lead.style.transform=`rotate(${ang.toFixed(1)}deg)`;
+      co._cache={preview,ver:camVer};
+    }
+  }
+  if(vfocus){
+    const fc=document.getElementById("fcard");
+    if(following||!fc._cache||fc._cache.vfocus!==vfocus||fc._cache.ver!==camVer){
+      const disk=units[vfocus.role*2+vfocus.sl]._disk;
+      const sr=stage.getBoundingClientRect(), right=vfocus.side==="right";
+      let gR=-1e9, gL=1e9; const dr=disk.getBoundingClientRect(); gR=Math.max(gR,dr.right); gL=Math.min(gL,dr.left);
+      disk.querySelectorAll("text.lab,text.stag").forEach(t=>{const r=t.getBoundingClientRect(); if(r.width){gR=Math.max(gR,r.right); gL=Math.min(gL,r.left);}});
+      gR-=sr.left; gL-=sr.left;
+      const cy=dr.top+dr.height/2-sr.top;
+      const cardW=300; let cardH=fc.getBoundingClientRect().height; if(!(cardH>120)) cardH=255;
+      let cardX = right ? (gR+30) : (gL-30-cardW);
+      cardX = Math.max(8, Math.min(sr.width-cardW-8, cardX));
+      let cardTop = Math.max(8, Math.min(sr.height-cardH-8, cy-cardH/2));
+      fc.style.left=cardX+"px"; fc.style.right="auto"; fc.style.transform="none"; fc.style.top=cardTop+"px";
+      fc._cache={vfocus,ver:camVer};
+    }
+  }
+  }
+  if(following) scheduleFrame();
+}
+
+const stage=document.getElementById("stage");
+const pointers=new Map();
+let lastX=0,lastY=0,downX=0,downY=0,pinchD=0,downIso=null;
+stage.addEventListener("pointerenter",()=>hovering=true);
+stage.addEventListener("pointerleave",()=>{hovering=false; setHover(null);});
+stage.addEventListener("pointerdown",e=>{
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  dragMoved=false; lastX=e.clientX; lastY=e.clientY; downX=e.clientX; downY=e.clientY; downIso=iso;
+  if(pointers.size===2){const p=[...pointers.values()];pinchD=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);}
+});
+stage.addEventListener("pointermove",e=>{
+  if(!pointers.has(e.pointerId)){
+    if(e.pointerType==="touch" || dragging || iso===null){ if(hov) setHover(null); return; }
+    setHover(nearestVertex(e.clientX,e.clientY)); return;
+  }
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2){
+    const p=[...pointers.values()],d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+    if(pinchD)zoomZ=Math.max(-520,Math.min(260,zoomZ+(d-pinchD)));
+    pinchD=d; dragMoved=true; dragging=true; applyWorld(); return;
+  }
+  if(!dragging){
+    if(Math.abs(e.clientX-downX)+Math.abs(e.clientY-downY)<=10) return;
+    dragging=true; dragMoved=true; stage.classList.add("drag");
+    try{stage.setPointerCapture(e.pointerId);}catch(_){}
+    clearTimeout(previewTimer); setPreview(null);
+    lastX=e.clientX; lastY=e.clientY;
+  }
+  const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  ry+=dx*0.3;
+  if(iso!==null){ ry=Math.max(-20,Math.min(20,ry)); }
+  applyWorld();
+});
+function endPtr(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size<2)pinchD=0;
+  if(pointers.size===0){dragging=false;stage.classList.remove("drag");}
+}
+stage.addEventListener("pointerup",endPtr);
+stage.addEventListener("pointercancel",endPtr);
+stage.addEventListener("pointerup",e=>{
+  if(dragMoved || downIso===null) return;
+  const hit=nearestVertex(e.clientX,e.clientY);
+  if(hit){ focusVertex(iso,hit.sl,hit.k); return; }
+  if(vfocus && !(e.target.closest && e.target.closest("#fcard,#back"))) exitVertex();
+});
+document.getElementById("back").addEventListener("click",exitVertex);
+let wheelT=0;
+stage.addEventListener("wheel",e=>{e.preventDefault();const now=performance.now();if(now-wheelT<16)return;wheelT=now;zoomZ=Math.max(-520,Math.min(260,zoomZ-e.deltaY*0.5));applyWorld();},{passive:false});
+
+document.getElementById("prev").addEventListener("click",()=>{ if(iso!==null) isolate(Math.max(0,iso-1)); });
+document.getElementById("next").addEventListener("click",()=>{ if(iso!==null) isolate(Math.min(lastRole,iso+1)); });
+document.getElementById("all").addEventListener("click",rebuild);
+function nearestAngle(t,c){while(t-c>180)t-=360;while(t-c<-180)t+=360;return t;}
+function frontIdx(){let b=0,bv=-2;for(let i=0;i<units.length;i++){const f=Math.cos((i*STEP+ry)*Math.PI/180);if(f>bv){bv=f;b=i;}}return SLICES[b].ri;}
+function selectFront(role){const N=ROLES.length;selIdx=((role%N)+N)%N;ry=norm(ry);tweenCam(rx,nearestAngle(-skUnit(selIdx)*STEP,ry),420);requestPreview(selIdx);}
+
+document.addEventListener("keydown",e=>{
+  if(e.repeat&&/[A-Za-z ]|Arrow/.test(e.key)) return;
+  if(compareEl.classList.contains("show")){ if(e.key==="Escape") closeCompare(); return; }
+  if(e.key==="Escape"){ if(vfocus) exitVertex(); else if(iso!==null) rebuild(); else { selIdx=null; clearTimeout(previewTimer); setPreview(null); } }
+  else if(e.key==="ArrowRight"){ iso!==null?isolate(Math.min(lastRole,iso+1)):selectFront((selIdx==null?frontIdx():selIdx)+1); }
+  else if(e.key==="ArrowLeft"){ iso!==null?isolate(Math.max(0,iso-1)):selectFront((selIdx==null?frontIdx():selIdx)-1); }
+  else if(e.key==="Enter"||e.key===" "){ if(iso===null&&selIdx!=null){ e.preventDefault(); isolate(selIdx); } }
+});
+
+function placeLabels(){
+  const need=R+22;
+  document.querySelectorAll(".disk svg").forEach(svg=>{
+    svg.querySelectorAll("text.lab").forEach(t=>{
+      let x=parseFloat(t.getAttribute("x")), y=parseFloat(t.getAttribute("y"));
+      const len=Math.hypot(x,y)||1, ux=x/len, uy=y/len;
+      for(let iter=0;iter<5;iter++){
+        let bb; try{ bb=t.getBBox(); }catch(e){ return; }
+        const nx=Math.max(bb.x,Math.min(0,bb.x+bb.width)), ny=Math.max(bb.y,Math.min(0,bb.y+bb.height));
+        const nd=Math.hypot(nx,ny);
+        if(nd>=need) break;
+        const push=need-nd+0.5; x+=ux*push; y+=uy*push;
+        t.setAttribute("x",x.toFixed(1)); t.setAttribute("y",y.toFixed(1));
+      }
+    });
+  });
+}
+
+renderLegend(null);
+initTorus();
+applyWorld(); layout(); drawTorus(); 
+window.addEventListener("resize",()=>{ camVer++; stageRect=null; torusRectsCached=false; document.getElementById("callout")._cache=null; document.getElementById("fcard")._cache=null; drawTorus(); mark(); });
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(placeLabels);}else{placeLabels();}
+
+</script>
+</body>
+</html>
