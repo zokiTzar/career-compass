@@ -929,5 +929,17 @@ window.addEventListener("resize",()=>{ camVer++; stageRect=null; torusRectsCache
 if(document.fonts&&document.fonts.ready){document.fonts.ready.then(placeLabels);}else{placeLabels();}
 
 </script>
+<!-- ===== signup CTA: links to your Brevo hosted sign-up form ===== -->
+<!-- REPLACE the href below with your form's Share URL: Brevo > Forms > your form > Share > copy the hosted form link (a sibforms.com URL). -->
+<a id="signupCta" href="https://00b437bd.sibforms.com/serve/MUIFAE8Y601BlQ3sOvFJf5qVDYHKw19QDmptkgMXHJbzJCKuthCbLeI_9n9GnYdK3F0YDBpJ2t-NR6BKXx_RJGThgQLZLw1hGpR32vg2dDYxBYvM6SCGX0vvMHOdfhiAtT2KoStvAX4NA6ieoQkthMAK9l4Z8zHc8iHtvmgV10RvP0CScQ2ls4YHCSnLH2wbQsciYPcV0e5yDt2r6g==" target="_blank" rel="noopener"
+   style="position:fixed;right:18px;bottom:18px;z-index:30;display:inline-flex;align-items:center;gap:8px;
+   padding:11px 16px;border-radius:10px;background:#36d98a;color:#04140c;
+   font:700 12px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.04em;text-decoration:none;
+   box-shadow:0 4px 18px rgba(0,0,0,.45);">Get the free report &rarr;</a>
+<script>
+/* hide the CTA while the compare overlay is open so it never overlaps */
+(function(){var c=document.getElementById("compare"),b=document.getElementById("signupCta");
+if(c&&b){new MutationObserver(function(){b.style.display=c.classList.contains("show")?"none":"";}).observe(c,{attributes:true,attributeFilter:["class"]});}})();
+</script>
 </body>
 </html>
